@@ -1034,7 +1034,9 @@ function requestAITaskComments(tasks) {
     var cached = task.aiComments && task.aiComments[mode];
     pending[task.id] = true;
     fetch(aiEndpoint(), {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    redirect: 'follow',
       body: JSON.stringify({
         taskComment: true,
         personaPrompt: window.PERSONA_CONFIG && window.PERSONA_CONFIG.systemPrompt,
@@ -2442,7 +2444,9 @@ function aiReply(text) {
 
   /* 代理模式：key 在服务端，前端只发上下文 */
   return fetch(ep, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    redirect: 'follow',
     body: JSON.stringify({
       messages: hist,
       ctx: {

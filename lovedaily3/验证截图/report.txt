@@ -1,0 +1,31 @@
+PASS 底栏在视口内(底部)  {"top":775,"bottom":844,"vb":844,"inView":true}
+PASS 底栏贴近视口底边  bottom=844 vb=844
+PASS 切到「today」页且底栏仍在  {"on":true,"navInView":true}
+PASS 切到「line」页且底栏仍在  {"on":true,"navInView":true}
+PASS 切到「plan」页且底栏仍在  {"on":true,"navInView":true}
+PASS 切到「him」页且底栏仍在  {"on":true,"navInView":true}
+PASS 切到「me」页且底栏仍在  {"on":true,"navInView":true}
+PASS 计划页维度=「week」激活  {"sel":"true","on":true}
+PASS 计划页维度=「month」激活  {"sel":"true","on":true}
+PASS 计划页维度=「year」激活  {"sel":"true","on":true}
+PASS 计划页三维度切换正常
+PASS 计划页 FAB(添加) 可见  这是之前缺失的交互入口
+PASS 计划页成功添加循环计划  {"count":1,"hasNew":true}
+PASS 删除计划弹确认层
+PASS 计划页删除后列表清空  rows=0
+PASS 时间轴渲染有内容  len=127
+PASS 时间轴日期弹层可打开
+PASS 时间轴切到明天并刷新  {"lmeta":"明天","tlLen":206}
+PASS 「跟他说话」进入对话页
+PASS 对话页发送消息成功  {"msgs":2,"hasMine":true}
+PASS 对话页返回到 Dark 页
+PASS 我的页-提前提醒可切换  任务开始前 15 分钟 -> 任务开始前 30 分钟
+PASS 我的页-点击 定位 无异常
+PASS 我的页-点击 通知 无异常
+PASS 我的页-点击 导出 无异常
+PASS 运行期间无 JS 致命错误
+
+==== 错误日志 ====
+(无)
+
+==== 结论: 全部通过 ====

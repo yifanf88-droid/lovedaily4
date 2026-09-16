@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>念念日程 · 线上版本诊断报告</title>
+<style>
+  :root{
+    --bg:#0e1117; --panel:#161b26; --panel2:#1c2331; --line:#283041;
+    --ink:#e8ecf4; --ink2:#a8b2c6; --ink3:#6b7689;
+    --her:#ff7a93; --her-dim:rgba(255,122,147,.12);
+    --him:#7da2ff; --him-dim:rgba(125,162,255,.12);
+    --ok:#3ddc97; --bad:#ff5d5d; --warn:#ffb454;
+    --ff:-apple-system,BlinkMacSystemFont,"PingFang SC","Segoe UI",sans-serif;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);font-family:var(--ff);line-height:1.65;padding:40px 20px 80px}
+  .wrap{max-width:880px;margin:0 auto}
+
+  /* ── Hero ── */
+  .hero{border-bottom:1px solid var(--line);padding-bottom:32px;margin-bottom:36px}
+  .kicker{font-size:12px;letter-spacing:.14em;color:var(--him);text-transform:uppercase;margin-bottom:10px;font-weight:600}
+  h1{font-size:30px;font-weight:700;letter-spacing:-.01em}
+  h1 .dot{color:var(--her)}
+  .sub{margin-top:10px;color:var(--ink2);font-size:14.5px;max-width:640px}
+  .meta{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap}
+  .meta span{font-size:12px;color:var(--ink3);background:var(--panel);border:1px solid var(--line);padding:4px 10px;border-radius:20px}
+
+  /* ── 结论卡片 ── */
+  .verdict{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:40px}
+  .vc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .vc .n{font-size:26px;font-weight:700;line-height:1.1}
+  .vc .l{font-size:12.5px;color:var(--ink2);margin-top:6px}
+  .vc.hot{border-color:rgba(255,93,93,.4);background:linear-gradient(180deg,rgba(255,93,93,.07),var(--panel))}
+  .vc.hot .n{color:var(--bad)}
+  .vc.good{border-color:rgba(61,220,151,.35);background:linear-gradient(180deg,rgba(61,220,151,.06),var(--panel))}
+  .vc.good .n{color:var(--ok)}
+  .vc.blue .n{color:var(--him)}
+  .vc.rose .n{color:var(--her)}
+
+  h2{font-size:17px;font-weight:650;margin:40px 0 14px;display:flex;align-items:center;gap:10px}
+  h2::before{content:"";width:4px;height:16px;border-radius:2px;background:var(--her);display:inline-block}
+
+  /* ── 问题链路 ── */
+  .chain{display:flex;flex-direction:column;gap:0;margin:18px 0 8px}
+  .cstep{display:flex;gap:14px;align-items:flex-start}
+  .cstep .idx{flex:none;width:26px;height:26px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--him);margin-top:2px}
+  .cstep .box{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+  .cstep .box b{font-size:14.5px}
+  .cstep .box p{font-size:13.5px;color:var(--ink2);margin-top:5px}
+  .cstep .box code{font-family:var(--mono);font-size:12.5px;background:var(--panel2);border:1px solid var(--line);
+    padding:1px 6px;border-radius:5px;color:var(--her)}
+  .cstep .box .hl{color:var(--bad);font-weight:600}
+  .arrow{align-self:center;color:var(--ink3);font-size:13px;margin:-4px 0 8px 12px}
+
+  /* ── 表格 ── */
+  .tbl{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .tbl th{background:var(--panel2);text-align:left;padding:11px 14px;font-size:12.5px;color:var(--ink3);font-weight:600;letter-spacing:.03em}
+  .tbl td{padding:10px 14px;border-top:1px solid var(--line);color:var(--ink2)}
+  .tbl td:first-child{color:var(--ink)}
+  .tbl .y{color:var(--ok);font-weight:700}
+  .tbl .n{color:var(--bad);font-weight:700}
+  .tbl tr.lost td{background:rgba(255,93,93,.04)}
+
+  /* ── 步骤 ── */
+  .steps{counter-reset:st;display:flex;flex-direction:column;gap:14px;margin-top:8px}
+  .step{display:flex;gap:16px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .step .no{counter-increment:st;flex:none;width:34px;height:34px;border-radius:50%;
+    background:linear-gradient(135deg,var(--her),#ff5d8f);color:#fff;display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:15px;box-shadow:0 4px 14px rgba(255,122,147,.25)}
+  .step .body{flex:1;min-width:0}
+  .step .body b{font-size:15px}
+  .step .body p{font-size:13.5px;color:var(--ink2);margin-top:5px}
+  .step .body p b{font-size:13.5px;color:var(--ink)}
+
+  pre{background:#0a0d13;border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;
+    font-family:var(--mono);font-size:12.5px;line-height:1.7;color:#c9d4e8;margin-top:10px}
+  pre .cm{color:#5b6775}
+  pre .c{color:var(--ink3)}
+
+  .warn{background:var(--him-dim);border:1px solid rgba(125,162,255,.3);border-radius:12px;padding:14px 16px;margin-top:14px;font-size:13.5px;color:var(--ink2)}
+  .warn b{color:var(--him)}
+
+  .footer{margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font-size:12px;color:var(--ink3);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="kicker">NianNian · Dark · Deployment Diagnosis</div>
+    <h1>念念日程 · 线上版本诊断报告<span class="dot">.</span></h1>
+    <p class="sub">针对线上地址 <b>894c16cd.lovedaliy.pages.dev</b> 与本地完整版（Claude 最终版）的逐项比对。诊断基于真实浏览器渲染测试 + 文件级 diff，非目测。</p>
+    <div class="meta">
+      <span>📅 2026-08-14</span>
+      <span>🌐 线上 88KB vs 完整版 109KB</span>
+      <span>✅ 恢复版 25/25 项验证通过</span>
+    </div>
+  </div>
+
+  <!-- 结论 -->
+  <div class="verdict">
+    <div class="vc hot"><div class="n">-21KB</div><div class="l">线上版被删减的内容量（88KB vs 109KB）</div></div>
+    <div class="vc rose"><div class="n">8 项</div><div class="l">交互功能被删除：计划列表 / 日期切换 / 重复选项 / 删除确认…</div></div>
+    <div class="vc blue"><div class="n">v1</div><div class="l">sw.js 被回退到 cache-first 旧版 → 手机 PWA 锁死旧缓存</div></div>
+    <div class="vc good"><div class="n">完好</div><div class="l">dark-voice.js 人格引擎 0 差异，未被动过</div></div>
+  </div>
+
+  <!-- 问题链路 -->
+  <h2>问题链路：为什么"点击底栏没反应"</h2>
+  <div class="chain">
+    <div class="cstep"><div class="idx">1</div><div class="box">
+      <b>混元在旧账号里修改了代码并重新部署</b>
+      <p>对比线上与本地完整版，线上 <code>index.html</code> 是删减过的 88KB 版本：计划页的循环计划列表、时间轴日期切换、重复选项、删除确认等 <span class="hl">8 处交互功能被移除</span>，底栏还丢失了 <code>position:fixed</code> 固定定位。</p>
+    </div></div>
+    <div class="arrow">↓</div>
+    <div class="cstep"><div class="idx">2</div><div class="box">
+      <b>同一次部署把 sw.js 回退成了 v1 的 cache-first 策略</b>
+      <p>线上 <code>sw.js</code> 的缓存名是 <code>niannian-dark-v1</code>，HTML 走 <b>"先返回缓存，后台才更新"</b>；而完整版是 <code>v2</code> 的 <b>"先拉最新，离线才回退"</b> + <code>updatefound</code> 自动刷新。这是 8 月 13 日专门修过的缓存 bug，混元把它改回去了。</p>
+    </div></div>
+    <div class="arrow">↓</div>
+    <div class="cstep"><div class="idx">3</div><div class="box">
+      <b>你手机上的 PWA 一直命中旧缓存里的坏页面</b>
+      <p>你的 iPhone 早已注册过 v1 的 Service Worker，缓存里存着混元早期上传的坏版本。由于 cache-first，<b>每次打开都直接读缓存</b>，看到的永远是旧页面——所以"点击底栏根本没反应"。<span class="hl">这不是新部署的页面坏了，是你的设备被旧缓存锁死了。</span></p>
+    </div></div>
+  </div>
+
+  <!-- 功能矩阵 -->
+  <h2>功能损失清单（线上版 vs 完整版）</h2>
+  <table class="tbl">
+    <tr><th style="width:42%">功能</th><th style="width:12%">线上版</th><th>说明</th></tr>
+    <tr class="lost"><td>计划页 · 进行中的计划列表</td><td class="n">❌ 删除</td><td>循环计划只显示在日历格，列表区整个被删（renderPlanList 全部移除）</td></tr>
+    <tr class="lost"><td>计划页 · 添加循环计划（FAB）</td><td class="n">❌ 删除</td><td>FAB 现在只在「今天」页显示，计划页无法添加</td></tr>
+    <tr class="lost"><td>计划页 · 重复选项（每周几）</td><td class="n">❌ 删除</td><td>周一到周日的重复选择 chips 被移除</td></tr>
+    <tr class="lost"><td>计划页 · 删除计划确认弹层</td><td class="n">❌ 删除</td><td>删除循环计划需确认的流程被移除</td></tr>
+    <tr class="lost"><td>时间轴 · 日期切换器</td><td class="n">❌ 删除</td><td>时间轴页顶部的日期按钮被删成静态文字，无法浏览其他日期</td></tr>
+    <tr class="lost"><td>底栏 · 固定定位</td><td class="n">❌ 回退</td><td>丢失 position:fixed，iPhone Safari 上可能被顶出可视区</td></tr>
+    <tr class="lost"><td>键盘 · 输入框上移</td><td class="n">❌ 删除</td><td>对话页键盘弹出遮挡输入框的适配被移除</td></tr>
+    <tr class="lost"><td>Service Worker · v2 网络优先</td><td class="n">❌ 回退</td><td>缓存名回到 v1 + cache-first，旧版本永久命中</td></tr>
+    <tr><td>任务勾选 / 三环 / 提醒</td><td class="y">✅ 保留</td><td>核心任务流程未被破坏</td></tr>
+    <tr><td>对话页 · 发送消息</td><td class="y">✅ 保留</td><td>聊天功能存在（但键盘遮挡适配已丢）</td></tr>
+    <tr><td>dark-voice.js 人格引擎</td><td class="y">✅ 一致</td><td>23,639 字节，与完整版 0 差异</td></tr>
+  </table>
+
+  <!-- 修复 -->
+  <h2>修复方案：两步恢复完整版</h2>
+  <div class="steps">
+    <div class="step"><div class="no">1</div><div class="body">
+      <b>重新部署「念念日程-dark-完整版」到 Cloudflare Pages</b>
+      <p>恢复包已备好，含 v2 的 <code>sw.js</code>（network-first + 自动刷新），部署后旧缓存会被 v2 自动清理并更新。<b>部署前先确认项目名</b>（你的地址 <code>894c16cd.lovedaliy.pages.dev</code>，项目名通常是 <code>894c16cd</code>，可在 Dashboard → Workers &amp; Pages 里看到）：</p>
+<pre># 在「念念日程-dark-完整版」文件夹里执行
+npx wrangler@latest login          # 首次需要浏览器授权
+npx wrangler@latest pages project list          # 确认项目名
+npx wrangler@latest pages deploy . --project-name=894c16cd   # 按实际项目名替换</pre>
+      <p>或者在 Cloudflare Dashboard → Workers &amp; Pages → 你的项目 → <b>Upload assets</b>，把「念念日程-dark-完整版」文件夹整体拖入上传，效果相同。</p>
+    </div></div>
+    <div class="step"><div class="no">2</div><div class="body">
+      <b>清掉手机上的旧 PWA 缓存（关键步骤）</b>
+      <p>部署完成后，你手机上的旧版本不会自动消失，必须重置一次：</p>
+      <p>① 从 iPhone 主屏幕<b>长按「念念日程」图标 → 删除 App</b><br>
+      ② 用 <b>Safari</b> 重新打开 <code>https://894c16cd.lovedaliy.pages.dev/</code><br>
+      ③ 分享按钮 → <b>「添加到主屏幕」</b>，重新安装<br>
+      ④ 进入「我的」页重新授权定位/通知（localStorage 数据不受影响，任务还在）</p>
+    </div></div>
+  </div>
+
+  <div class="warn">
+    <b>⚠ 提示：</b>如果不想删图标重装，也可以在 iPhone 的「设置 → Safari → 高级 → 网站数据」里搜 <b>lovedaliy</b> 删除该网站数据，再重开页面。两种方式都行，但重装 PWA 最彻底。
+  </div>
+
+  <div class="footer">
+    <span>念念日程 · 恢复诊断 · 2026-08-14</span>
+    <span>完整版验证：25/25 通过 ｜ 恢复包：念念日程-dark-完整版/</span>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,16 @@
+/* 9:16 原片完整显示，热点与画面共享坐标。 */
+html.nn-intro-active,html.nn-intro-active body{overflow:hidden!important}
+#nn-intro{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;background:#f5eee8;opacity:1;transition:opacity .85s ease}
+#nn-intro.nn-leaving{opacity:0;pointer-events:none}
+#nn-stage{position:relative;width:min(100vw,56.25vh);height:min(100vh,177.777778vw);width:min(100vw,56.25dvh);height:min(100dvh,177.777778vw);background:#f5eee8 url('./assets/intro/poster.png') center/contain no-repeat;overflow:hidden}
+#nn-stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;pointer-events:none}
+#nn-stage video.nn-visible{opacity:1}
+#nn-intro button{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.nn-hotspot{position:absolute;z-index:4;padding:0;border:0;background:transparent;border-radius:18px}
+.nn-hotspot:focus-visible{outline:3px solid #386b96;outline-offset:4px;background:#ffffff24}
+#nn-book{left:29%;top:77.5%;width:42%;height:7%}
+#nn-select{left:51%;top:15.5%;width:45%;height:34%}
+#nn-help{position:absolute;z-index:5;left:8%;right:8%;bottom:3%;text-align:center;padding:14px;border-radius:16px;background:#fffffff0;color:#34465a;font:14px/1.5 sans-serif}
+#nn-help button,#nn-help a{display:inline-block;padding:8px 12px;margin:4px;border:1px solid #bdcddd;border-radius:18px;background:white;color:#34465a;text-decoration:none;font:inherit}
+#nn-intro [hidden]{display:none!important}
+@media(prefers-reduced-motion:reduce){#nn-intro{transition-duration:.15s}}

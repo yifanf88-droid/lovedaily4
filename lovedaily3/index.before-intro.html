@@ -1,0 +1,3127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+<title>念念日程</title>
+
+<!-- iOS 全屏 standalone 必备。缺 apple-mobile-web-app-capable 就会带 Safari 地址栏 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="念念">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme:light)">
+<meta name="theme-color" content="#131316" media="(prefers-color-scheme:dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+/* ============================================================================
+   设计令牌 —— 沿用 v6：纯白底 + 反转层次
+   底一旦纯白，卡片无法更亮，层次会塌，所以反转为「白底 + 略深卡片」。
+   page/card 亮度比 = 1.0436，可见但不显脏。
+   色相只回答「这是谁的」（她=玫瑰 / 他=墨蓝），明度只回答「什么状态」。
+   ========================================================================== */
+:root{
+  --page:oklch(100% 0 0);
+  --card:oklch(98.6% 0.003 285);
+  --card-2:oklch(97.2% 0.004 285);
+  --sunk:oklch(95.5% 0.005 285);
+  --sunk-2:oklch(93% 0.006 285);
+
+  --ink:oklch(23% 0.016 285);
+  --ink-2:oklch(42% 0.014 285);
+  --ink-3:oklch(50% 0.012 285);
+  --ink-4:oklch(60% 0.012 285);
+
+  --line:oklch(91.6% 0.004 285);
+  --line-2:oklch(86.2% 0.006 285);
+  --line-3:oklch(66% 0.008 285);   /* 复选框描边 3.12:1 —— 交互元素需 ≥3:1 */
+
+  --her-900:oklch(34% 0.118 8);
+  --her-700:oklch(44% 0.132 8);
+  --her-500:oklch(50% 0.132 8);
+  --her-400:oklch(62% 0.112 8);
+  --her-300:oklch(72% 0.090 8);
+  --her-200:oklch(88.6% 0.042 8);
+  --her-100:oklch(95.2% 0.020 8);
+  --her-050:oklch(97.8% 0.009 8);
+
+  --him-700:oklch(36% 0.070 252);
+  --him-500:oklch(44% 0.078 252);
+  --him-400:oklch(58% 0.068 252);
+  --him-300:oklch(70% 0.052 252);
+  --him-200:oklch(88.6% 0.030 252);
+  --him-100:oklch(95% 0.018 252);
+  --him-050:oklch(97.6% 0.008 252);
+
+  --ff:"PingFang SC","HarmonyOS Sans SC","Hiragino Sans GB",-apple-system,system-ui,sans-serif;
+  --fs:"Noto Serif SC","Songti SC",serif;
+  --fe:"Newsreader",Georgia,serif;
+
+  --t-xs:0.75rem; --t-sm:0.8125rem; --t-md:0.9375rem;
+  --t-lg:1.0625rem; --t-xl:1.375rem; --t-2xl:1.75rem; --t-3xl:2.25rem;
+
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:20px; --s6:24px; --s8:32px; --s10:40px;
+  --r-sm:8px; --r:12px; --r-lg:16px; --r-xl:22px;
+  --sh-1:0 1px 2px oklch(23% 0.016 285/.05);
+  --sh-2:0 2px 8px oklch(23% 0.016 285/.06),0 1px 2px oklch(23% 0.016 285/.04);
+  --sh-3:0 8px 28px oklch(23% 0.016 285/.10);
+  --ez:cubic-bezier(.22,1,.36,1);
+  --tap:44px;
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --page:oklch(15% 0.010 285); --card:oklch(19% 0.011 285);
+    --card-2:oklch(22% 0.011 285); --sunk:oklch(25% 0.012 285); --sunk-2:oklch(28% 0.012 285);
+    --ink:oklch(95% 0.006 285); --ink-2:oklch(78% 0.010 285);
+    --ink-3:oklch(66% 0.012 285); --ink-4:oklch(54% 0.012 285);
+    --line:oklch(27% 0.012 285); --line-2:oklch(36% 0.014 285); --line-3:oklch(50% 0.016 285);
+    --her-900:oklch(90% 0.062 8); --her-700:oklch(84% 0.086 8);
+    --her-500:oklch(77% 0.104 8); --her-400:oklch(66% 0.100 8);
+    --her-300:oklch(54% 0.090 8); --her-200:oklch(38% 0.068 8);
+    --her-100:oklch(28% 0.050 8); --her-050:oklch(23% 0.034 8);
+    --him-700:oklch(87% 0.046 252); --him-500:oklch(77% 0.068 252);
+    --him-400:oklch(66% 0.066 252); --him-300:oklch(52% 0.058 252);
+    --him-200:oklch(37% 0.050 252); --him-100:oklch(27% 0.042 252);
+    --him-050:oklch(22% 0.028 252);
+    --sh-1:none; --sh-2:none; --sh-3:0 8px 28px oklch(0% 0 0/.55);
+  }
+  body{font-weight:350}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{
+  background:var(--page);color:var(--ink);
+  font-family:var(--ff);font-size:var(--t-md);line-height:1.6;
+  -webkit-font-smoothing:antialiased;font-kerning:normal;
+  overscroll-behavior:none;             /* 禁掉整页橡皮筋，否则不像 App */
+  -webkit-user-select:none;user-select:none;
+}
+input,textarea{-webkit-user-select:auto;user-select:auto}
+
+#app{height:100%;display:flex;flex-direction:column;padding-top:var(--safe-t)}
+#view{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
+      padding:var(--s2) var(--s5) calc(var(--s8) + 12px)}
+#view::-webkit-scrollbar{width:0}
+.screen{display:none;animation:fade .26s var(--ez)}
+.screen.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+/* ---------- 顶栏：真实天气 ---------- */
+.top{display:flex;justify-content:space-between;align-items:flex-start;padding:var(--s4) 0 var(--s4);gap:var(--s3)}
+.dat .d1{font-family:var(--fs);font-size:var(--t-2xl);font-weight:500;line-height:1.12;letter-spacing:-.01em}
+.dat .d2{font-size:var(--t-xs);color:var(--ink-3);margin-top:4px;display:flex;align-items:center;gap:7px;font-variant-numeric:tabular-nums}
+.dat .d2 i{width:1px;height:10px;background:var(--line-2);display:block}
+.wx{display:flex;align-items:center;gap:var(--s2);background:var(--card);border:1px solid var(--line);
+    border-radius:99px;padding:7px 13px 7px 10px;min-height:38px;cursor:pointer;flex:none;
+    transition:all .18s var(--ez)}
+.wx:active{transform:scale(.97)}
+.wx svg{width:19px;height:19px;fill:none;stroke-width:1.7;flex:none}
+.wx .i-sun{stroke:var(--her-500)}
+.wx .i-rain{stroke:var(--him-500)}
+.wx .i-rain .cl{stroke:var(--ink-3)}
+.wx .i-cloud{stroke:var(--ink-3)}
+.wx .tx{display:flex;flex-direction:column;line-height:1.1}
+.wx .dg{font-family:var(--fe);font-size:var(--t-md);font-weight:500;font-variant-numeric:tabular-nums}
+.wx .lc{font-size:10px;color:var(--ink-3);margin-top:2px;max-width:76px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---------- 三环 ---------- */
+.rings{display:flex;align-items:center;gap:var(--s5);padding:var(--s2) 0 var(--s5)}
+.rings svg{flex:none}
+.rleg{flex:1;display:flex;flex-direction:column;gap:var(--s3)}
+.rl{display:flex;align-items:baseline;gap:var(--s2)}
+.rl .sw{width:9px;height:9px;border-radius:3px;flex:none;transform:translateY(-1px)}
+.rl .nm{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:500}
+.rl .vl{margin-left:auto;font-family:var(--fs);font-size:var(--t-md);font-weight:500;font-variant-numeric:tabular-nums}
+.rl .un{font-size:10px;color:var(--ink-4);margin-left:2px}
+.rhint{font-size:var(--t-xs);color:var(--ink-2);line-height:1.55;padding-top:var(--s3);
+       border-top:1px dashed var(--line-2);margin-top:var(--s1)}
+
+/* ---------- 分组标签 ---------- */
+.lbl{display:flex;align-items:center;justify-content:space-between;margin:var(--s5) 0 var(--s3)}
+.lbl b{font-size:var(--t-xs);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:500}
+.lbl em{font-size:var(--t-xs);color:var(--ink-3);font-style:normal;font-variant-numeric:tabular-nums}
+
+/* ---------- 任务卡 ---------- */
+.task{display:flex;gap:var(--s3);background:var(--card);border:1px solid var(--line);
+      border-radius:var(--r);padding:var(--s3) var(--s4);margin-bottom:var(--s2);
+      transition:background .2s var(--ez),border-color .2s var(--ez)}
+.task.now{border-color:var(--her-300);background:var(--her-050)}
+.task.care{border-color:var(--him-200);background:var(--him-050)}
+.task.fin{background:transparent;border-color:transparent}
+.box{width:22px;height:22px;flex:none;margin-top:1px;border:1.5px solid var(--line-3);
+     border-radius:7px;background:transparent;cursor:pointer;display:grid;place-items:center;
+     transition:all .2s var(--ez);position:relative}
+.box::after{content:"";position:absolute;inset:-11px;border-radius:12px}  /* 22px 视觉 → 44px 触达 */
+.box svg{width:12px;height:12px;stroke:var(--page);stroke-width:2.4;fill:none;opacity:0;transition:opacity .16s}
+.box:focus-visible{outline:2px solid var(--her-500);outline-offset:3px}
+.box.on{background:var(--her-500);border-color:var(--her-500)}
+.box.on svg{opacity:1}
+.care .box.on{background:var(--him-500);border-color:var(--him-500)}
+.tk{flex:1;min-width:0}
+.tk .tm{font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.tk .tm .late{color:var(--her-700);font-weight:500}
+.tk .nm{font-size:var(--t-md);font-weight:500;line-height:1.45;margin-top:1px;word-break:break-word}
+.fin .nm{color:var(--ink-3);text-decoration:line-through;text-decoration-color:var(--line-2);font-weight:400}
+.byhim{display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--him-500);margin-top:4px;font-weight:500}
+.byhim svg{width:10px;height:10px;stroke:currentColor;stroke-width:2;fill:none}
+.tags{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+.tag{font-size:11px;padding:2px 7px;border-radius:5px;background:var(--sunk);color:var(--ink-2)}
+.tag.k{background:var(--her-100);color:var(--her-700)}
+.tag.u{background:var(--her-200);color:var(--her-900);font-weight:500}
+.tag.h{background:var(--him-100);color:var(--him-700)}
+.tag.c{background:var(--card-2,rgba(128,128,128,.12));color:var(--ink-3)}
+.del{width:30px;height:30px;flex:none;border:0;background:transparent;cursor:pointer;
+     display:grid;place-items:center;opacity:.32;margin:-4px -6px 0 0}
+.del svg{width:13px;height:13px;stroke:var(--ink-3);stroke-width:1.8;fill:none}
+
+/* ============================================================================
+   他的话：挂在对应任务下方
+   提醒和夸赞用同一套呈现——本质都是「他就这件事说了什么」。
+   34px 左缩进对齐复选框列宽，虚线分隔，明确是附注而非与任务名平级。
+   ========================================================================== */
+.said{margin-top:var(--s3);padding-top:var(--s3);border-top:1px dashed var(--line-2);margin-left:34px}
+.said.praise{border-top-color:var(--her-200)}
+
+/* thought process：小时钟 + 英文标签，放在他的话「上方」
+   顺序即语义——先想后说。放下方会读成事后解释，说服力弱。 */
+.tpb{display:inline-flex;align-items:center;gap:6px;font-family:var(--ff);font-size:10px;
+     letter-spacing:.05em;color:var(--him-500);background:transparent;border:0;cursor:pointer;
+     padding:4px 0;min-height:30px}
+.tpb .clk{width:12px;height:12px;flex:none}
+.tpb .clk circle{fill:none;stroke:currentColor;stroke-width:1.6}
+.tpb .clk path{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;transform-origin:12px 12px}
+.tpb .cv{width:8px;height:8px;stroke:currentColor;stroke-width:2;fill:none;transition:transform .26s var(--ez);opacity:.7}
+.tpb[aria-expanded="true"] .cv{transform:rotate(180deg)}
+.tpb:focus-visible{outline:2px solid var(--him-500);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion:no-preference){
+  /* 未展开时秒针慢跳，暗示「他还在想」；展开后停止 */
+  .tpb[aria-expanded="false"] .clk path{animation:tick 3s steps(4) infinite}
+  @keyframes tick{to{transform:rotate(360deg)}}
+}
+.tpw{max-height:0;overflow:hidden;transition:max-height .34s var(--ez)}
+.tpw[data-open="true"]{max-height:400px}
+.tpin{background:var(--him-050);border-radius:var(--r-sm);padding:var(--s3) var(--s4);
+      border-left:2px dashed var(--him-300);margin:var(--s2) 0 var(--s3)}
+.tplbl{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--him-500);
+       font-weight:500;margin-bottom:7px}
+.tpin p{font-family:var(--fe);font-size:var(--t-sm);line-height:1.85;color:var(--him-700);font-style:italic}
+.tpin p+p{margin-top:7px}
+.tpin p:last-child{color:var(--him-500);opacity:.85}   /* 第四拍：像自言自语 */
+.saidw{font-family:var(--fs);font-size:var(--t-sm);line-height:1.75;color:var(--ink);white-space:pre-line}
+.saidm{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--ink-3);margin-top:6px}
+.pulse{width:5px;height:5px;border-radius:50%;background:var(--him-400);flex:none}
+
+/* ---------- 空状态 ---------- */
+.empty{text-align:center;padding:var(--s10) var(--s5);color:var(--ink-3)}
+.empty .q{font-family:var(--fs);font-size:var(--t-md);line-height:1.8;color:var(--ink-2);margin-top:var(--s3)}
+
+/* ---------- 时间轴 ---------- */
+.tl{position:relative;padding-left:var(--s6);margin-top:var(--s2)}
+.tl::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:1px;background:var(--line-2)}
+.ev{position:relative;margin-bottom:var(--s4)}
+.ev::before{content:"";position:absolute;left:calc(-1 * var(--s6) + 3px);top:5px;width:9px;height:9px;
+            border-radius:50%;background:var(--page);border:2px solid var(--line-3)}
+.ev.k::before{border-color:var(--her-500);background:var(--her-500)}
+.ev.d::before{border-color:var(--her-200);background:var(--her-200)}
+.ev.h::before{border-color:var(--him-400);background:var(--him-050)}
+.ev .t{font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.ev .n{font-size:var(--t-sm);font-weight:500;margin-top:1px}
+.ev.d .n{color:var(--ink-3);text-decoration:line-through;text-decoration-color:var(--line-2);font-weight:400}
+.nowline{display:flex;align-items:center;gap:var(--s2);margin:var(--s4) 0;position:relative}
+.nowline::before{content:"";position:absolute;left:calc(-1 * var(--s6) + 4px);width:7px;height:7px;
+                 border-radius:50%;background:var(--her-500);box-shadow:0 0 0 3px var(--page)}
+.nowline i{flex:1;height:1px;background:var(--her-300)}
+.nowline b{font-size:10px;color:var(--her-700);letter-spacing:.1em;font-weight:600;
+           font-variant-numeric:tabular-nums}
+
+/* ---------- 计划页 ---------- */
+.segbar{display:flex;gap:3px;background:var(--sunk);border-radius:10px;padding:3px;margin-bottom:var(--s5)}
+.segbar button{flex:1;font-family:var(--ff);font-size:var(--t-sm);padding:8px 0;border:0;border-radius:8px;
+  background:transparent;color:var(--ink-3);cursor:pointer;transition:all .2s var(--ez);min-height:38px}
+.segbar button[aria-selected="true"]{background:var(--page);color:var(--ink);font-weight:500;box-shadow:var(--sh-1)}
+.pv{display:none}.pv.on{display:block}
+.bignum{display:flex;align-items:baseline;gap:var(--s2);margin-bottom:var(--s1)}
+.bignum .v{font-family:var(--fe);font-size:var(--t-3xl);font-weight:500;line-height:1;
+           font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.bignum .u{font-size:var(--t-sm);color:var(--ink-3)}
+.bignum .dl{margin-left:auto;font-size:11px;padding:3px 8px;border-radius:99px;
+            background:var(--her-100);color:var(--her-700);font-weight:500}
+.sumline{font-size:var(--t-xs);color:var(--ink-2);line-height:1.6;margin-bottom:var(--s5)}
+.barweek{display:flex;gap:var(--s2);align-items:flex-end;height:118px;padding:var(--s4) 0 0}
+.bw{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px}
+.bw .cols{display:flex;gap:2px;align-items:flex-end;height:88px}
+.bw .cols i{width:6px;border-radius:99px 99px 3px 3px;display:block;background:var(--sunk)}
+.bw small{font-size:10px;color:var(--ink-3)}
+.bw.today small{color:var(--her-700);font-weight:600}
+.heat{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:var(--s3)}
+.heat .hd{font-size:10px;color:var(--ink-4);text-align:center;padding-bottom:2px}
+/* 默认态 = 尚未到来：虚线空框。若用实灰，未来会和「当天什么都没做」长得一样 */
+.heat i{aspect-ratio:1;border-radius:5px;background:transparent;
+        border:1px dashed var(--line-2);display:block;box-sizing:border-box}
+.heat i.z{background:var(--sunk);border:0}
+.heat i.l1{background:var(--her-100);border:0}
+.heat i.l2{background:var(--her-200);border:0}
+.heat i.l3{background:var(--her-300);border:0}
+.heat i.l4{background:var(--her-500);border:0}
+.heat i.today{box-shadow:0 0 0 2px var(--ink)}
+.heat i.void{background:transparent;border:0}
+.legend{display:flex;align-items:center;gap:6px;justify-content:flex-end;margin-top:var(--s3);
+        font-size:10px;color:var(--ink-3)}
+.legend i{width:11px;height:11px;border-radius:3px;display:block}
+.legend i.fut{background:transparent;border:1px dashed var(--line-2);box-sizing:border-box}
+.ymrow{display:flex;flex-direction:column;gap:7px;margin-top:var(--s3)}
+.ym{display:flex;align-items:center;gap:var(--s3)}
+.ym small{width:26px;flex:none;font-size:10px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.ym .bar{flex:1;height:16px;border-radius:5px;background:var(--sunk);overflow:hidden;display:flex}
+.ym .bar i{display:block;height:100%}
+.ym .bar i.a{background:var(--her-400)}
+.ym .bar i.b{background:var(--him-300)}
+.ym .bar i.c{background:var(--her-200)}
+.ym b{width:30px;text-align:right;flex:none;font-size:10px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.ym.fut .bar{opacity:.3}
+.ym.fut b{color:var(--ink-4)}
+
+/* ---------- 他的页 ---------- */
+.hero{background:var(--him-500);border-radius:var(--r-lg);padding:var(--s5);margin-bottom:var(--s4);
+      color:oklch(100% 0 0)}
+.hero .nm{font-family:var(--fs);font-size:var(--t-xl);font-weight:500;letter-spacing:.02em}
+.hero .rl2{font-size:var(--t-xs);opacity:.8;margin-top:2px}
+.hero .st{font-size:var(--t-xs);opacity:.85;margin-top:8px;display:flex;align-items:center;gap:6px}
+.hero .st .pulse{background:oklch(100% 0 0);opacity:.85}
+.hero q{display:block;font-family:var(--fs);font-size:var(--t-sm);line-height:1.8;margin-top:var(--s4);
+        padding-top:var(--s4);border-top:1px solid oklch(100% 0 0/.22);quotes:none;opacity:.95;white-space:pre-line}
+/* 对话入口：挂在他的页里，不占一级导航格 */
+.talkb{width:100%;margin-top:var(--s4);display:flex;align-items:center;justify-content:center;gap:7px;
+       font-family:var(--ff);font-size:var(--t-sm);font-weight:500;padding:11px;min-height:42px;
+       border-radius:var(--r-sm);border:1px solid oklch(100% 0 0/.34);
+       background:oklch(100% 0 0/.14);color:oklch(100% 0 0);cursor:pointer;position:relative}
+.talkb:active{background:oklch(100% 0 0/.24)}
+.talkb svg{width:15px;height:15px;stroke:currentColor;stroke-width:1.8;fill:none}
+.talkb .nb{width:6px;height:6px;border-radius:50%;background:var(--her-300);display:none}
+.talkb.hasnew .nb{display:block}
+/* 对话页返回键 */
+.backb{width:34px;height:34px;flex:none;border:0;background:transparent;cursor:pointer;
+       display:grid;place-items:center;margin-left:-6px}
+.backb svg{width:19px;height:19px;stroke:var(--ink-2);stroke-width:1.9;fill:none}
+.backb:active{opacity:.5}
+.arc{background:var(--him-050);border:1px solid var(--him-100);border-radius:var(--r);
+     padding:var(--s4);margin-bottom:var(--s4)}
+.arc .cap{font-size:var(--t-xs);letter-spacing:.1em;text-transform:uppercase;color:var(--him-500);font-weight:500}
+.arc .nm{font-size:var(--t-md);font-weight:500;margin-top:5px}
+.arc .mt{font-size:var(--t-xs);color:var(--ink-2);margin-top:3px}
+.hb{display:flex;gap:var(--s3);padding:var(--s3) 0;border-bottom:1px dashed var(--line)}
+.hb:last-child{border:0}
+.hbd{width:20px;height:20px;flex:none;margin-top:2px;border-radius:6px;border:1.5px solid var(--line-3);
+     display:grid;place-items:center}
+.hbd svg{width:11px;height:11px;stroke:var(--page);stroke-width:2.6;fill:none}
+.hbd.on{background:var(--him-200);border-color:var(--him-200)}
+.hbd.on svg{stroke:var(--him-700)}
+.hb .tx{flex:1}
+.hb .tm{font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.hb .nm{font-size:var(--t-sm);margin-top:1px}
+.hb.on .nm{color:var(--ink-3);text-decoration:line-through;text-decoration-color:var(--line-2)}
+.hb .no{font-size:11px;color:var(--him-500);margin-top:3px}
+
+/* ============================================================================
+   对话页
+   ========================================================================== */
+#s-chat{display:none;flex-direction:column;height:100%}
+#s-chat.on{display:flex}
+.chdr{display:flex;align-items:center;gap:var(--s3);padding:var(--s4) var(--s5) var(--s3);
+      border-bottom:1px solid var(--line);flex:none}
+.av{width:38px;height:38px;border-radius:50%;background:var(--him-500);flex:none;
+    display:grid;place-items:center;color:oklch(100% 0 0);font-family:var(--fe);
+    font-size:var(--t-md);font-weight:500;letter-spacing:.04em}
+.chdr .who{flex:1;min-width:0}
+.chdr .who b{font-family:var(--fs);font-size:var(--t-md);font-weight:500;display:block}
+.chdr .who small{font-size:10px;color:var(--ink-3);display:flex;align-items:center;gap:5px;margin-top:2px}
+#thread{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:var(--s4) var(--s5) var(--s5);
+        display:flex;flex-direction:column;gap:var(--s4)}
+#thread::-webkit-scrollbar{width:0}
+.mine{align-self:flex-end;max-width:80%;background:var(--her-500);color:oklch(100% 0 0);
+      padding:9px 14px;border-radius:16px 16px 5px 16px;font-size:var(--t-sm);line-height:1.6;
+      word-break:break-word;white-space:pre-line}
+.his{align-self:flex-start;max-width:88%}
+.his .bub{background:var(--card);border:1px solid var(--line);padding:11px 15px;
+          border-radius:16px 16px 16px 5px;font-family:var(--fs);font-size:var(--t-sm);
+          line-height:1.8;word-break:break-word;white-space:pre-line}
+.his .tpb{margin-bottom:2px}
+.typing{align-self:flex-start;display:flex;gap:4px;padding:12px 16px;background:var(--card);
+        border:1px solid var(--line);border-radius:16px 16px 16px 5px}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--ink-4);display:block;
+          animation:bl 1.3s infinite}
+.typing i:nth-child(2){animation-delay:.18s}
+.typing i:nth-child(3){animation-delay:.36s}
+@keyframes bl{0%,60%,100%{opacity:.28}30%{opacity:1}}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:0 var(--s5) var(--s2);flex:none;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;font-family:var(--ff);font-size:var(--t-xs);padding:7px 12px;border-radius:99px;
+      border:1px solid var(--line-2);background:var(--card);color:var(--ink-2);cursor:pointer;min-height:34px}
+.chip:active{background:var(--sunk)}
+.composer{flex:none;display:flex;gap:var(--s2);align-items:flex-end;padding:var(--s3) var(--s5)
+          calc(var(--s3) + var(--safe-b));border-top:1px solid var(--line);background:var(--page)}
+.composer textarea{flex:1;font-family:var(--ff);font-size:var(--t-md);line-height:1.5;
+  padding:10px 14px;border:1px solid var(--line-2);border-radius:20px;background:var(--card);
+  color:var(--ink);resize:none;max-height:96px;min-height:42px;outline:none}
+.composer textarea:focus{border-color:var(--him-400)}
+.sendb{width:42px;height:42px;flex:none;border-radius:50%;border:0;background:var(--him-500);
+       cursor:pointer;display:grid;place-items:center}
+.sendb:disabled{opacity:.34}
+.sendb svg{width:17px;height:17px;stroke:oklch(100% 0 0);stroke-width:2;fill:none}
+
+/* ---------- 我的页 ---------- */
+.row{display:flex;align-items:center;gap:var(--s3);background:var(--card);border:1px solid var(--line);
+     border-radius:var(--r);padding:var(--s4);margin-bottom:var(--s2)}
+.row .tx{flex:1;min-width:0}
+.row .tx b{font-size:var(--t-md);font-weight:500;display:block}
+.row .tx small{font-size:var(--t-xs);color:var(--ink-3);display:block;margin-top:2px;line-height:1.5}
+.btn{font-family:var(--ff);font-size:var(--t-sm);padding:9px 15px;min-height:38px;border-radius:var(--r-sm);
+     border:1px solid var(--her-500);background:var(--her-500);color:oklch(100% 0 0);cursor:pointer;
+     font-weight:500;flex:none}
+.btn.g{background:var(--card);color:var(--ink-2);border-color:var(--line-2)}
+.btn:active{transform:scale(.97)}
+.note{background:var(--card-2);border-radius:var(--r);padding:var(--s4);margin-top:var(--s4)}
+.note b{display:block;font-size:var(--t-xs);letter-spacing:.1em;text-transform:uppercase;
+        color:var(--ink-3);margin-bottom:7px;font-weight:500}
+.note p{font-size:var(--t-sm);line-height:1.7;color:var(--ink-2)}
+.note p+p{margin-top:8px}
+
+/* ---------- 底部导航 ---------- */
+.tabs{flex:none;display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);
+      background:var(--card);padding:var(--s2) var(--s1) calc(10px + var(--safe-b))}
+.tab{border:0;background:transparent;padding:6px 2px;cursor:pointer;display:flex;flex-direction:column;
+     align-items:center;gap:4px;min-height:var(--tap);justify-content:center;position:relative}
+.tab svg{width:20px;height:20px;stroke:var(--ink-3);stroke-width:1.6;fill:none;transition:stroke .18s}
+.tab span{font-size:10px;color:var(--ink-3);transition:color .18s}
+.tab[aria-current="page"] svg{stroke:var(--her-500)}
+.tab[aria-current="page"] span{color:var(--her-500);font-weight:500}
+.tab .dot{position:absolute;top:5px;right:calc(50% - 15px);width:6px;height:6px;border-radius:50%;
+          background:var(--her-500);display:none}
+.tab.hasnew .dot{display:block}
+
+/* ---------- FAB / 弹层 / toast ---------- */
+.fab{position:fixed;right:var(--s5);bottom:calc(78px + var(--safe-b));width:52px;height:52px;
+     border-radius:50%;border:0;background:var(--her-500);box-shadow:var(--sh-3);cursor:pointer;
+     display:grid;place-items:center;z-index:40}
+.fab svg{width:22px;height:22px;stroke:oklch(100% 0 0);stroke-width:2.2;fill:none}
+.fab:active{transform:scale(.94)}
+.mask{position:fixed;inset:0;background:oklch(23% 0.016 285/.42);z-index:60;display:none;
+      align-items:flex-end}
+.mask.on{display:flex}
+.sheet{width:100%;background:var(--page);border-radius:var(--r-xl) var(--r-xl) 0 0;
+       padding:var(--s5) var(--s5) calc(var(--s5) + var(--safe-b));animation:up .3s var(--ez)}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+.sheet h3{font-family:var(--fs);font-size:var(--t-lg);font-weight:500;margin-bottom:var(--s4)}
+.fld{margin-bottom:var(--s3)}
+.fld label{font-size:var(--t-xs);color:var(--ink-3);display:block;margin-bottom:5px}
+.fld input,.fld select{width:100%;font-family:var(--ff);font-size:var(--t-md);padding:11px 13px;
+  border:1px solid var(--line-2);border-radius:var(--r-sm);background:var(--card);color:var(--ink);outline:none}
+.fld input:focus,.fld select:focus{border-color:var(--her-500)}
+.fld .rr{display:flex;gap:var(--s2)}
+.fld .rr button{flex:1;font-family:var(--ff);font-size:var(--t-xs);padding:10px 4px;border-radius:var(--r-sm);
+  border:1px solid var(--line-2);background:var(--card);color:var(--ink-2);cursor:pointer;min-height:40px}
+.fld .rr button[aria-pressed="true"]{border-color:var(--her-500);background:var(--her-050);
+  color:var(--her-700);font-weight:500}
+.sheet .acts{display:flex;gap:var(--s2);margin-top:var(--s5)}
+.sheet .acts .btn{flex:1}
+#toast{position:fixed;left:50%;bottom:calc(96px + var(--safe-b));transform:translateX(-50%) translateY(14px);
+  background:var(--ink);color:var(--page);padding:12px 18px;border-radius:var(--r);font-size:var(--t-sm);
+  max-width:82%;opacity:0;pointer-events:none;transition:all .3s var(--ez);z-index:80;box-shadow:var(--sh-3)}
+#toast.on{opacity:1;transform:translateX(-50%)}
+#toast small{display:block;font-size:11px;opacity:.7;margin-top:3px}
+
+/* 循环计划列表 */
+.plan-item{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:var(--s3);
+  margin-bottom:var(--s3);position:relative}
+.plan-title{font-size:var(--t-md);font-weight:500;color:var(--ink);margin-bottom:6px}
+.plan-meta{font-size:var(--t-xs);color:var(--ink-3);margin-bottom:4px}
+.plan-period{font-size:var(--t-xs);color:var(--ink-2)}
+.plan-del{position:absolute;top:var(--s3);right:var(--s3);font-size:var(--t-xs);
+  color:var(--ink-3);background:none;border:none;cursor:pointer;padding:4px 8px}
+.plan-del:hover{color:var(--her-500)}
+
+/* 首页布局微调：天气横排、三环放大 */
+@media (min-width:0px){
+  #s-today .top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  #s-today .wx{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:9px;white-space:nowrap;padding:7px 18px;margin:0 2px 0 auto;border:1px solid var(--line-2);border-radius:999px;min-width:154px}
+  #s-today .wx .tx{display:flex;flex-direction:row;align-items:baseline;gap:6px}
+  #s-today .wx .lc{font-size:var(--t-xs);white-space:nowrap}
+  #s-today .wx svg{width:22px;height:22px;flex:none}
+  #s-today .rings{grid-template-columns:minmax(210px,1fr) minmax(150px,1fr);gap:18px;align-items:center}
+  #s-today .rings>svg{width:210px;height:210px;max-width:100%;justify-self:center}
+  #s-today .rleg{min-width:0}
+  #s-today .rl{gap:8px;font-size:var(--t-md);min-height:44px}
+  #s-today .rl .vl{font-size:var(--t-md)}
+  #s-today .rl .nm{font-size:var(--t-md);font-weight:500}
+  #s-today .rhint{font-size:var(--t-sm);margin-top:12px;padding-top:12px}
+}
+@media (max-width:380px){
+  #s-today .rings{grid-template-columns:minmax(180px,1fr) minmax(132px,1fr);gap:10px}
+  #s-today .rings>svg{width:180px;height:180px}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+<div id="view">
+
+  <!-- ══════════════════ 今天 ══════════════════ -->
+  <section class="screen on" id="s-today">
+    <div class="top">
+      <div class="dat">
+        <div class="d1" id="dbig">8月13日</div>
+        <div class="d2" id="dmeta"><span>周四</span><i></i><span>0/0</span></div>
+      </div>
+      <button class="wx" id="wx" aria-label="刷新天气与定位">
+        <svg id="wxi" class="i-cloud" viewBox="0 0 24 24"></svg>
+        <span class="tx"><span class="dg" id="wxd">--°</span><span class="lc" id="wxl">获取中…</span></span>
+      </button>
+    </div>
+
+    <div class="rings">
+      <svg width="130" height="130" viewBox="0 0 148 148" aria-label="今日三环完成度">
+        <circle cx="74" cy="74" r="58" fill="none" stroke="var(--her-100)" stroke-width="12"/>
+        <circle cx="74" cy="74" r="41" fill="none" stroke="var(--him-100)" stroke-width="12"/>
+        <circle cx="74" cy="74" r="24" fill="none" stroke="var(--sunk-2)" stroke-width="12"/>
+        <circle id="k1" cx="74" cy="74" r="58" fill="none" stroke="var(--her-500)" stroke-width="12"
+          stroke-linecap="round" stroke-dasharray="364.42" stroke-dashoffset="364.42"
+          transform="rotate(-90 74 74)" style="transition:stroke-dashoffset .6s var(--ez)"/>
+        <circle id="k2" cx="74" cy="74" r="41" fill="none" stroke="var(--him-500)" stroke-width="12"
+          stroke-linecap="round" stroke-dasharray="257.61" stroke-dashoffset="257.61"
+          transform="rotate(-90 74 74)" style="transition:stroke-dashoffset .6s var(--ez)"/>
+        <circle id="k3" cx="74" cy="74" r="24" fill="none" stroke="var(--her-300)" stroke-width="12"
+          stroke-linecap="round" stroke-dasharray="150.80" stroke-dashoffset="150.80"
+          transform="rotate(-90 74 74)" style="transition:stroke-dashoffset .6s var(--ez)"/>
+      </svg>
+      <div class="rleg">
+        <div class="rl"><span class="sw" style="background:var(--her-500)"></span>
+          <span class="nm">正事</span><span class="vl" id="n1">0<span class="un">/0</span></span></div>
+        <div class="rl"><span class="sw" style="background:var(--him-500)"></span>
+          <span class="nm">他的安排</span><span class="vl" id="n2">0<span class="un">/0</span></span></div>
+        <div class="rl"><span class="sw" style="background:var(--her-300)"></span>
+          <span class="nm">身体</span><span class="vl" id="n3">0<span class="un">/0</span></span></div>
+        <div class="rhint" id="rhint">正在读取今天的安排。</div>
+      </div>
+    </div>
+
+    <div id="tasklist"></div>
+  </section>
+
+  <!-- ══════════════════ 时间轴 ══════════════════ -->
+  <section class="screen" id="s-line">
+    <div class="top"><div class="dat">
+      <div class="d1">时间轴</div>
+      <div class="d2" id="lmeta"><span>今天</span></div>
+    </div></div>
+    <div class="tl" id="tl"></div>
+  </section>
+
+  <!-- ══════════════════ 计划 ══════════════════ -->
+  <section class="screen" id="s-plan">
+    <div class="top"><div class="dat">
+      <div class="d1">计划</div>
+      <div class="d2"><span>不同尺度上的完成情况</span></div>
+    </div></div>
+    <div class="segbar" role="tablist">
+      <button role="tab" aria-selected="false" data-pv="list">循环计划</button>
+      <button role="tab" aria-selected="true"  data-pv="week">本周</button>
+      <button role="tab" aria-selected="false" data-pv="month">本月</button>
+      <button role="tab" aria-selected="false" data-pv="year">本年</button>
+    </div>
+
+    <div class="pv" id="pv-list">
+      <div id="planList"></div>
+    </div>
+
+    <div class="pv on" id="pv-week">
+      <div class="bignum"><span class="v" id="wkPct">0%</span><span class="u">本周平均完成</span>
+        <span class="dl" id="wkDl">—</span></div>
+      <p class="sumline" id="wkSum">本周还在进行。</p>
+      <div class="lbl"><b>每日三环</b><em>正事 / 他的安排 / 身体</em></div>
+      <div class="barweek" id="barweek"></div>
+      <div class="note" id="wkNote"></div>
+    </div>
+
+    <div class="pv" id="pv-month">
+      <div class="bignum"><span class="v" id="moDays">0</span><span class="u">天三环全合</span>
+        <span class="dl" id="moDl">—</span></div>
+      <p class="sumline" id="moSum">本月记录。</p>
+      <div class="heat" id="heat"></div>
+      <div class="legend"><span>未到</span><i class="fut"></i>
+        <span style="margin-left:6px">少</span>
+        <i style="background:var(--sunk)"></i><i style="background:var(--her-100)"></i>
+        <i style="background:var(--her-200)"></i><i style="background:var(--her-300)"></i>
+        <i style="background:var(--her-500)"></i><span>多</span></div>
+      <div class="note" id="moNote"></div>
+    </div>
+
+    <div class="pv" id="pv-year">
+      <div class="bignum"><span class="v" id="yrPct">0%</span><span class="u">全年平均</span></div>
+      <p class="sumline" id="yrSum">按月看趋势。</p>
+      <div class="ymrow" id="ymrow"></div>
+      <div class="note" id="yrNote"></div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ 他 ══════════════════ -->
+  <section class="screen" id="s-him">
+    <div class="hero">
+      <div class="nm">他</div>
+      <div class="rl2">段伏 · 只在这里陪你</div>
+      <div class="st"><span class="pulse"></span><span id="hmStat">在实验室</span></div>
+      <q id="hmQuote">…</q>
+      <!-- 对话入口挂在这里，而不是占一个一级导航格。
+           「和他说话」这个动作天然属于他这一页；聊天也不该是产品第一入口。 -->
+      <button class="talkb" id="btn-talk">
+        <svg viewBox="0 0 24 24"><path d="M20.5 11.4a7.9 7.9 0 01-11.4 7.1L4 20l1.5-4.6A7.9 7.9 0 1120.5 11.4z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>跟他说话</span>
+        <i class="nb" id="talkDot"></i>
+      </button>
+    </div>
+
+    <div class="arc">
+      <div class="cap">他的主线</div>
+      <div class="nm" id="arcNm">渡劫 · 博士资格</div>
+    </div>
+    <div class="lbl"><b>他今天的安排</b><em>你不能替他完成</em></div>
+    <div id="hisTodo"></div>
+    <div class="note">
+      <b>为什么这些不能勾</b>
+      <p>他的日程是他的。你可以关心，但不能替他划掉——那样他就只是你的一个功能，不是一个人。</p>
+    </div>
+  </section>
+
+  <!-- ══════════════════ 我的 ══════════════════ -->
+  <section class="screen" id="s-me">
+    <div class="top"><div class="dat"><div class="d1">我的</div>
+      <div class="d2"><span>权限与数据</span></div></div></div>
+
+    <div class="row"><div class="tx"><b>定位与天气</b>
+      <small id="geoSub">未获取 · 天气用默认城市</small></div>
+      <button class="btn g" id="btn-geo">获取</button></div>
+
+    <div class="row"><div class="tx"><b>任务临期提醒</b>
+      <small id="notifSub">未开启 · 需添加到主屏幕后授权</small></div>
+      <button class="btn" id="btn-notif">授权</button></div>
+
+    <div class="row"><div class="tx"><b>提前多久提醒</b>
+      <small id="leadSub">任务开始前 15 分钟</small></div>
+      <button class="btn g" id="btn-lead">15 分</button></div>
+
+    <div class="row"><div class="tx"><b>AI 对话</b>
+      <small id="aiSub">未配置 · 现在用内置人格规则</small></div>
+      <button class="btn g" id="btn-ai">设置</button></div>
+
+    <div class="row"><div class="tx"><b>导出数据</b>
+      <small>下载 JSON，包含任务与对话</small></div>
+      <button class="btn g" id="btn-exp">导出</button></div>
+
+    <div class="row"><div class="tx"><b>重置</b>
+      <small>清空全部本地数据</small></div>
+      <button class="btn g" id="btn-reset">重置</button></div>
+
+    <div class="note">
+      <b>关于提醒</b>
+      <p>系统级通知需要三个条件同时满足：iOS 16.4 或更高、通过 Safari「添加到主屏幕」、以及你授权了通知。</p>
+      <p>网页应用无法在完全关闭后唤醒自己——这是 iOS 的限制，不是这个 App 的缺陷。想让提醒在 App 关闭时也准时响，需要用 Capacitor 打包成原生 App（说明见 README）。</p>
+      <p>你的数据只存在这台设备上，没有服务器。定位仅用于取当地天气。</p>
+    </div>
+  </section>
+
+  <!-- ══════════════════ 对话（独立布局，不进 #view 滚动区） ══════════════════ -->
+</div><!-- /#view -->
+
+<section class="screen" id="s-chat">
+  <div class="chdr">
+    <!-- 对话页没有导航格，必须有返回键，否则进去就出不来 -->
+    <button class="backb" id="btn-back" aria-label="返回">
+      <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="av">D</div>
+    <div class="who"><b>他</b><small><span class="pulse"></span><span id="chStat">在</span></small></div>
+    <button class="btn g" id="btn-clear" style="padding:7px 12px;min-height:34px">清空</button>
+  </div>
+  <div id="thread"></div>
+  <div class="chips" id="chips"></div>
+  <div class="composer">
+    <textarea id="msg" rows="1" placeholder="跟他说点什么…" enterkeyhint="send"></textarea>
+    <button class="sendb" id="btn-send" disabled aria-label="发送">
+      <svg viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+</section>
+
+<nav class="tabs">
+  <button class="tab" data-go="today" aria-current="page">
+    <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/></svg><span>今天</span></button>
+  <button class="tab" data-go="line">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"/><path d="M12 7.6V12l3 1.9" stroke-linecap="round"/></svg><span>时间轴</span></button>
+  <button class="tab" data-go="plan">
+    <svg viewBox="0 0 24 24"><path d="M5 18V9M10 18V5M15 18v-6M20 18v-9" stroke-linecap="round"/></svg><span>计划</span></button>
+  <button class="tab" data-go="him">
+    <svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.7-7.5-10A4.3 4.3 0 0112 7.6a4.3 4.3 0 017.5 2.9c0 5.3-7.5 10-7.5 10z" stroke-linecap="round" stroke-linejoin="round"/></svg><span>他</span><i class="dot"></i></button>
+  <button class="tab" data-go="me">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="8.4" r="3.7"/><path d="M5.2 20a6.8 6.8 0 0113.6 0" stroke-linecap="round"/></svg><span>我的</span></button>
+</nav>
+</div><!-- /#app -->
+
+<button class="fab" id="fab" aria-label="新建任务">
+  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></button>
+
+<div class="mask" id="mask"><div class="sheet" id="sheet"></div></div>
+<div id="toast"></div>
+
+<script src="人设配置.js"></script>
+<script src="happiness_small_things.js"></script>
+<script src="dark-voice.js"></script>
+<script>
+'use strict';
+/* ============================================================================
+   状态
+   ========================================================================== */
+var KEY = 'niannian.dark.v1';
+var S, cur = 'today', curPv = 'week';
+
+function todayStr(d) {
+  d = d || new Date();
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+function seed() {
+  return {
+    day: todayStr(),
+    view: todayStr(),  /* 当前查看的日期（支持查看过去/未来） */
+    /* ring: 1=正事 2=他加的关心 3=身体 */
+    tasks: [],  /* 改为空数组，所有任务由用户实际建立（Dark 的关心任务由运行时动态添加） */
+    days: {},  /* 多日任务存储：{ '2026-08-14': [...tasks], '2026-08-15': [...] } */
+    plans: [],  /* 循环计划：[{ id, title, ring, repeat, days, start, end, time }] */
+    /* 已经念过的（避免每次渲染都重新抽话） */
+    chat: [],
+    notified: {},
+    said: {},
+    geo: null, wx: null,
+    notif: false, lead: 15,
+    aiUrl: '', aiHere: false, lastWxCare: 0,
+    /* 历史完成记录：{ '2026-08-01': [3,2,1] } —— 三环各完成数 */
+    hist: {}
+  };
+}
+
+function load() {
+  try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
+  if (!S || !S.tasks) { S = seed(); demoHist(); save(); return; }
+  
+  /* 向后兼容：旧版数据迁移到新结构 */
+  if (!S.view) S.view = S.day;
+  if (!S.days) {
+    S.days = {};
+    S.days[S.day] = S.tasks;  /* 把旧的 tasks 迁移到 days[today] */
+  }
+  
+  /* 跨天：归档昨天的成绩，重置任务完成态，但保留用户自建的任务 */
+  var t = todayStr();
+  if (S.day !== t) {
+    var c = [0, 0, 0], tot = [0, 0, 0];
+    var yesterday = S.days[S.day] || [];
+    yesterday.forEach(function (x) { var i = x.ring - 1; tot[i]++; if (x.done) c[i]++; });
+    S.hist[S.day] = [c[0], c[1], c[2], tot[0], tot[1], tot[2]];
+    yesterday.forEach(function (x) { x.done = false; });
+    S.notified = {}; S.said = {}; S.day = t; S.view = t;
+    save();
+  }
+  if (!S.hist) S.hist = {};
+  if (S.lead === undefined) S.lead = 15;
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+/* 演示用历史（只在首次安装时写入，让计划页一开始就有东西看） */
+function demoHist() {
+  var lv = { 1: [2, 1, 1], 2: [1, 2, 0], 3: [3, 2, 2], 4: [1, 1, 1], 5: [2, 2, 1],
+             6: [4, 3, 2], 7: [2, 1, 1], 8: [4, 3, 2], 9: [4, 2, 2], 10: [3, 3, 1],
+             11: [4, 3, 2], 12: [4, 2, 2] };
+  var now = new Date();
+  for (var d in lv) {
+    var k = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(+d);
+    S.hist[k] = [lv[d][0], lv[d][1], lv[d][2], 4, 3, 2];
+  }
+}
+
+/* ============================================================================
+   工具
+   ========================================================================== */
+function $(s) { return document.querySelector(s); }
+function $$(s) { return [].slice.call(document.querySelectorAll(s)); }
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms || 8); } catch (e) {} }
+function toast(main, sub) {
+  var t = $('#toast');
+  t.innerHTML = esc(main) + (sub ? '<small>' + esc(sub) + '</small>' : '');
+  t.classList.add('on');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function () { t.classList.remove('on'); }, 3400);
+}
+function mins(hhmm) {
+  if (!hhmm) return null;
+  var p = hhmm.split(':');
+  return (+p[0]) * 60 + (+p[1]);
+}
+function nowMin() { var d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
+function relTime(hhmm) {
+  var m = mins(hhmm); if (m === null) return '';
+  var d = m - nowMin();
+  if (d < -60) return '已过 ' + Math.floor(-d / 60) + ' 小时';
+  if (d < 0) return '已过 ' + (-d) + ' 分钟';
+  if (d < 60) return d + ' 分钟后';
+  return Math.floor(d / 60) + ' 小时后';
+}
+
+/* ============================================================================
+   他的话：统一渲染。提醒和夸赞用同一套呈现——本质都是「他就这件事说了什么」
+   ========================================================================== */
+var tpN = 0;
+function saidHTML(v, cls) {
+  if (!v) return '';
+  var h = '<div class="said ' + (cls || '') + '">';
+  if (v.think && v.think.length) {
+    var id = 'tp' + (++tpN);
+    h += '<button class="tpb" aria-expanded="false" data-tp="' + id + '">'
+      +   '<svg class="clk" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'
+      +   '<span>thought process</span>'
+      +   '<svg class="cv" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      + '</button>'
+      + '<div class="tpw" id="' + id + '" data-open="false"><div class="tpin">'
+      + '<div class="tplbl">他在想</div>'
+      + v.think.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('')
+      + '</div></div>';
+  }
+  h += '<p class="saidw">' + esc(v.say) + '</p>'
+    +  '</div>';
+  return h;
+}
+
+/* 缓存他说的话：同一天同一任务同一状态，必须是同一句。
+   否则每次 re-render 都换一句，用户立刻发现这是随机文本。 */
+function said(task, mode, ctx) {
+  /* 幸福小事自带段伏留言,优先使用,避免每次再生成一套泛化话术 */
+  if (task.happinessSay && mode === 'remind') {
+    return { say: task.happinessSay, think: task.happinessThink || [], day: S.day };
+  }
+  /* AI 留言已缓存时优先显示,同一天刷新不会重复请求 */
+  if (task.aiComments && task.aiComments[mode] && task.aiComments[mode].day === S.day) {
+    return task.aiComments[mode];
+  }
+  if (task.aiComment && task.aiComment.day === S.day && mode === 'remind') {
+    return task.aiComment;
+  }
+  /* 已接入 AI 时先等实时留言，避免请求回来前闪现“现在做”等本地模板。 */
+  var aiState = task.aiComments && task.aiComments[mode];
+  if (aiEndpoint() && !(aiState && aiState.failedDay === S.day && (aiState.retries || 0) >= 3)) {
+    return { say: '……', think: [], day: S.day, pending: true };
+  }
+  var k = mode + ':' + task.id;
+  /* 检查缓存：如果已缓存且是今天的，复用；否则重新抽取（避免留言重复） */
+  if (S.said[k] && S.said[k].day === S.day) return S.said[k];
+  var v = mode === 'praise' ? Dark.praise(task, ctx) : Dark.remind(task, ctx);
+  if (v) v.day = S.day;  /* 标记生成日期 */
+  S.said[k] = v || { none: 1, day: S.day };
+  save();
+  return S.said[k];
+}
+
+/* ============================================================================
+   今天
+   ========================================================================== */
+/* 获取指定日期的任务列表（支持查看过去/未来） */
+/* 按日期记录已生成的关心；删除、完成、刷新都不会释放当天额度。 */
+function isHisCare(task) {
+  return !!task.byHim || /^care-/.test(String(task.id || ''));
+}
+function dayTasks(dateStr) {
+  if (!S.days[dateStr]) S.days[dateStr] = [];
+  if (!S.careIssued) S.careIssued = {};
+  if (!S.careOverflow) S.careOverflow = {};
+  var issued = S.careIssued[dateStr] || (S.careIssued[dateStr] = []);
+  var tasks = S.days[dateStr], count = 0, changed = false;
+  /* 旧版本超额条目留在本地备份中，首页只保留前三条，不影响用户自建日程。 */
+  for (var i = 0; i < tasks.length;) {
+    var task = tasks[i];
+    if (!isHisCare(task)) { i++; continue; }
+    if (issued.indexOf(task.id) === -1) { issued.push(task.id); changed = true; }
+    count++;
+    if (count > 3) {
+      if (!S.careOverflow[dateStr]) S.careOverflow[dateStr] = [];
+      S.careOverflow[dateStr].push(task);
+      tasks.splice(i, 1); changed = true;
+    } else i++;
+  }
+  if (changed) save();
+  return tasks;
+}
+
+function renderDate() {
+  var d = parseDate(S.view) || new Date();
+  var isToday = S.view === todayStr();
+  var mon = d.getMonth() + 1, day = d.getDate();
+  
+  $('#dbig').innerHTML = '<button id="dateBtn" style="background:none;border:none;color:inherit;font:inherit;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:8px">'
+    + '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.6">'
+    + '<rect x="3" y="4" width="18" height="18" rx="2"/>'
+    + '<path d="M16 2v4M8 2v4M3 10h18"/></svg>'
+    + mon + '月' + day + '日</button>';
+  
+  var w = '日一二三四五六'[d.getDay()];
+  var tasks = dayTasks(S.view);
+  var done = tasks.filter(function (t) { return t.done; }).length;
+  $('#dmeta').innerHTML = '<span>周' + w + '</span><i></i><span>' + done + '/' + tasks.length + ' 已完成</span>';
+  $('#lmeta').innerHTML = '<span>' + mon + '月' + day + '日 · 周' + w + '</span>';
+}
+
+/* 解析日期字符串 '2026-08-14' */
+function parseDate(s) {
+  if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+  var p = s.split('-');
+  return new Date(+p[0], +p[1] - 1, +p[2]);
+}
+
+var C = { 1: 364.42, 2: 257.61, 3: 150.80 };
+function ringStat() {
+  var r = { 1: [0, 0], 2: [0, 0], 3: [0, 0] };
+  var tasks = dayTasks(S.view);
+  tasks.forEach(function (t) { r[t.ring][1]++; if (t.done) r[t.ring][0]++; });
+  return r;
+}
+function renderRings() {
+  var r = ringStat(), allDone = true, anyDone = false;
+  for (var i = 1; i <= 3; i++) {
+    var on = r[i][0], tot = r[i][1] || 1;
+    $('#k' + i).setAttribute('stroke-dashoffset', (C[i] - C[i] * on / tot).toFixed(1));
+    $('#n' + i).innerHTML = on + '<span class="un">/' + r[i][1] + '</span>';
+    if (on < r[i][1]) allDone = false;
+    if (on > 0) anyDone = true;
+  }
+  var h = $('#rhint');
+  if (allDone) h.textContent = '三件都合上了。今天你照顾了正事，也照顾了自己。';
+  else {
+    var tasks = dayTasks(S.view);
+    var next = tasks.filter(function (t) { return !t.done && t.time && mins(t.time) >= nowMin(); })
+                    .sort(function (a, b) { return mins(a.time) - mins(b.time); })[0];
+    h.textContent = next
+      ? '下一件在 ' + next.time + '，' + relTime(next.time) + '。'
+      : (anyDone ? '还有没合上的环。不着急，但别忘了。' : '今天还没开始。');
+  }
+  return { all: allDone, any: anyDone };
+}
+
+function taskHTML(t) {
+  var late = t.time && !t.done && mins(t.time) < nowMin();
+  var urgent = t.time && !t.done && !late && mins(t.time) - nowMin() <= S.lead;
+  var cls = 'task' + (t.done ? ' fin' : '') + (t.ring === 2 ? ' care' : '') + (urgent ? ' now' : '');
+  var h = '<div class="' + cls + '" data-id="' + t.id + '">'
+    + '<button class="box' + (t.done ? ' on' : '') + '" data-tg="' + t.id + '" role="checkbox"'
+    + ' aria-checked="' + (t.done ? 'true' : 'false') + '" aria-label="' + esc(t.title) + '">'
+    + '<svg viewBox="0 0 24 24"><path d="M5 13l4.5 4.5L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    + '</button><div class="tk">';
+  if (t.time) {
+    h += '<div class="tm">' + t.time + (t.dur ? ' · ' + esc(t.dur) : '')
+      + (t.done ? '' : ' · <span class="' + (late ? 'late' : '') + '">' + relTime(t.time) + '</span>') + '</div>';
+  } else if (t.dur) { h += '<div class="tm">' + esc(t.dur) + '</div>'; }
+  h += '<div class="nm">' + esc(t.title) + '</div>';
+  if (t.byHim) {
+    h += '<div class="byhim"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-9.4A4 4 0 0112 8a4 4 0 017 2.6c0 5-7 9.4-7 9.4z"/></svg>他加的</div>';
+  }
+  var tg = [];
+  if (t.key) tg.push('<span class="tag u">最重要</span>');
+  if (t.ring === 2) tg.push('<span class="tag h">关心</span>');
+  if (t.ring === 3) tg.push('<span class="tag k">身体</span>');
+  if (t.category) tg.push('<span class="tag c">' + esc(t.category) + '</span>');
+  if (tg.length) h += '<div class="tags">' + tg.join('') + '</div>';
+
+  /* ── 他的话：完成 → 夸赞；未完成 → 提醒 ── */
+  var v;
+  if (t.done) {
+    v = said(t, 'praise', { day: S.day });
+    if (v && !v.none) h += saidHTML(v, 'praise');
+  } else {
+    v = said(t, 'remind', { day: S.day, urgent: urgent, overdue: late });
+    if (v && !v.none) h += saidHTML(v);
+  }
+  h += '</div>';
+  /* 所有任务都可以取消/删除 */
+  h += '<button class="del" data-del="' + t.id + '" aria-label="删除">'
+    + '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></button>';
+  return h + '</div>';
+}
+
+/* 用关键词给日程打标签,帮助 AI 针对具体场景留言。 */
+function classifyTask(title) {
+  var rules = [
+    { n: '工作', k: ['面试', '会议', '开会', '汇报', '客户', '邮件', '项目', '工作', '上班', '报告', '提交'] },
+    { n: '学习', k: ['考试', '复习', '上课', '作业', '论文', '看书', '学习', '背单词'] },
+    { n: '运动', k: ['健身', '跑步', '瑜伽', '拉伸', '散步', '运动', '游泳', '球'] },
+    { n: '饮食', k: ['吃饭', '早餐', '午餐', '晚餐', '喝水', '咖啡', '奶茶', '水果'] },
+    { n: '社交', k: ['朋友', '聚会', '约会', '见面', '聊天', '家人', '生日'] },
+    { n: '休息', k: ['睡觉', '午休', '放松', '发呆', '听歌', '电影', '休息'] }
+  ];
+  var s = String(title || '').toLowerCase();
+  for (var i = 0; i < rules.length; i++) {
+    for (var j = 0; j < rules[i].k.length; j++) {
+      if (s.indexOf(rules[i].k[j].toLowerCase()) > -1) return rules[i].n;
+    }
+  }
+  return '日常';
+}
+
+function renderTasks() {
+  var groups = [
+    { n: '正事', r: 1 }, { n: '他为我加的', r: 2 }, { n: '身体', r: 3 }
+  ];
+  var h = '';
+  var tasks = dayTasks(S.view);
+  var isToday = S.view === todayStr();
+  /* 给旧数据补上分类,新数据在 addTask 时已经写入 */
+  tasks.forEach(function (t) { if (!t.category) t.category = classifyTask(t.title); });
+  
+  groups.forEach(function (g) {
+    var list = tasks.filter(function (t) { return t.ring === g.r; });
+    /* Dark 的关心任务只在"今天"显示 */
+    if (g.r === 2 && !isToday) return;
+    if (!list.length) return;
+    var done = list.filter(function (t) { return t.done; }).length;
+    h += '<div class="lbl"><b>' + g.n + '</b><em>' + done + '/' + list.length + '</em></div>';
+    list.sort(function (a, b) {
+      var x = mins(a.time), y = mins(b.time);
+      if (x === null && y === null) return 0;
+      if (x === null) return 1; if (y === null) return -1;
+      return x - y;
+    });
+    h += list.map(taskHTML).join('');
+  });
+  if (!h) {
+    h = '<div class="empty"><div class="q">今天还没有任何安排。\n点右下角加一件——哪怕只是「喝水」。</div></div>';
+  }
+  $('#tasklist').innerHTML = h;
+  if (isToday) requestAITaskComments(tasks);
+}
+
+/* 日程留言：AI 优先生成，失败时才保留本地话术兜底。 */
+function requestAITaskComments(tasks) {
+  if (!aiEndpoint()) return;
+  var pending = window._aiTaskComments || (window._aiTaskComments = {});
+  var candidates = tasks.filter(function (t) {
+    var mode = t.done ? 'praise' : 'remind';
+    var cached = t.aiComments && t.aiComments[mode];
+    var failed = cached && cached.failedDay === S.day;
+    var retryable = failed && (!cached.retryAt || cached.retryAt <= Date.now())
+      && (cached.retries || 0) < 3;
+    return !t.happinessSay && !(cached && cached.day === S.day)
+      && (!failed || retryable) && !pending[t.id];
+  }).slice(0, 8); /* 一次最多8条,避免刚打开页面就发太多请求 */
+  candidates.forEach(function (task) {
+    /* mode 必须在当前回调内计算；筛选回调里的局部变量在这里不可见。 */
+    var mode = task.done ? 'praise' : 'remind';
+    var cached = task.aiComments && task.aiComments[mode];
+    pending[task.id] = true;
+    fetch(aiEndpoint(), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        taskComment: true,
+        personaPrompt: window.PERSONA_CONFIG && window.PERSONA_CONFIG.systemPrompt,
+        task: { title: task.title, time: task.time, category: task.category, done: task.done,
+          createdAt: task.createdAt || task.created || task.at || S.day + '（记录时间未保存）', mode: mode, now: new Date().toISOString() },
+        ctx: { memories: S.memories || [], weather: S.wx, time: new Date().toISOString(),
+          personaPrompt: window.PERSONA_CONFIG && window.PERSONA_CONFIG.systemPrompt },
+        messages: [{ role: 'user', content: mode === 'praise'
+          ? '她刚刚完成了这条日程。请结合具体标题和时间，写出有情绪、有反应的完成反馈。'
+          : '请结合这条日程的标题、时间和分类，写出符合你性格的实时留言。不要泛泛催促。' }]
+      })
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (!r.ok) throw new Error(j.hint || j.error || ('HTTP ' + r.status));
+        return j;
+      });
+    })
+      .then(function (j) {
+        if (j && j.say) {
+          if (!task.aiComments) task.aiComments = {};
+          task.aiComments[mode] = { say: j.say, think: j.think || [], day: S.day };
+          if (mode === 'remind') task.aiComment = task.aiComments[mode];
+          save(); renderTasks();
+        } else {
+          throw new Error('AI 没有返回可用留言');
+        }
+      })
+      .catch(function () {
+        /* 失败也记下来，避免渲染循环中重复请求；下次打开/新的一天自动重试。 */
+        var old = cached && cached.failedDay === S.day ? cached : {};
+        if (!task.aiComments) task.aiComments = {};
+        task.aiComments[mode] = { failedDay: S.day, retries: (old.retries || 0) + 1,
+          retryAt: Date.now() + 30000 };
+        save();
+      })
+      .then(function () { delete pending[task.id]; });
+  });
+}
+
+/* ============================================================================
+   时间轴
+   ========================================================================== */
+function renderLine() {
+  var tasks = dayTasks(S.view);
+  var timed = tasks.filter(function (t) { return t.time; })
+    .sort(function (a, b) { return mins(a.time) - mins(b.time); });
+  if (!timed.length) {
+    $('#tl').innerHTML = '<div class="empty"><div class="q">今天没有定时的安排。</div></div>';
+    return;
+  }
+  var cm = nowMin(), placed = false, h = '';
+  var nd = new Date();
+  var nowLbl = pad(nd.getHours()) + ':' + pad(nd.getMinutes());
+  timed.forEach(function (t) {
+    if (!placed && mins(t.time) > cm) {
+      h += '<div class="nowline"><b>NOW ' + nowLbl + '</b><i></i></div>';
+      placed = true;
+    }
+    var c = t.done ? 'd' : (t.ring === 2 ? 'h' : (t.key ? 'k' : ''));
+    h += '<div class="ev ' + c + '"><div class="t">' + t.time + '</div>'
+      + '<div class="n">' + esc(t.title) + '</div>'
+      + (t.dur ? '<div class="m">' + esc(t.dur) + '</div>' : '') + '</div>';
+  });
+  if (!placed) h += '<div class="nowline"><b>NOW ' + nowLbl + '</b><i></i></div>';
+  $('#tl').innerHTML = h;
+}
+
+/* ============================================================================
+   计划：周 / 月 / 年
+   ========================================================================== */
+function histFor(dateStr) {
+  if (dateStr === S.day) {
+    var r = ringStat();
+    return [r[1][0], r[2][0], r[3][0], r[1][1], r[2][1], r[3][1]];
+  }
+  return S.hist[dateStr] || null;
+}
+function pctOf(rec) {
+  if (!rec) return null;
+  var d = rec[0] + rec[1] + rec[2], t = rec[3] + rec[4] + rec[5];
+  return t ? d / t : 0;
+}
+
+function renderWeek() {
+  var now = new Date();
+  var dow = (now.getDay() + 6) % 7;              /* 周一=0 */
+  var mon = new Date(now); mon.setDate(now.getDate() - dow);
+  var names = ['一', '二', '三', '四', '五', '六', '日'];
+  var h = '', sum = 0, cnt = 0, worst = null, worstV = 2;
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(mon); d.setDate(mon.getDate() + i);
+    var ds = todayStr(d), rec = histFor(ds), isT = ds === S.day, fut = d > now && !isT;
+    var cols = '';
+    for (var r = 0; r < 3; r++) {
+      var v = rec && rec[r + 3] ? rec[r] / rec[r + 3] : 0;
+      var hh = fut ? 4 : Math.max(4, Math.round(v * 86));
+      var col = r === 0 ? 'var(--her-500)' : r === 1 ? 'var(--him-500)' : 'var(--her-300)';
+      cols += '<i style="height:' + hh + 'px;background:' + (fut || !rec ? 'var(--sunk)' : col) + '"></i>';
+    }
+    h += '<div class="bw' + (isT ? ' today' : '') + '"><div class="cols">' + cols + '</div>'
+      + '<small>' + names[i] + '</small></div>';
+    var p = pctOf(rec);
+    if (p !== null && !fut) {
+      sum += p; cnt++;
+      if (p < worstV) { worstV = p; worst = names[i]; }
+    }
+  }
+  $('#barweek').innerHTML = h;
+  var avg = cnt ? Math.round(sum / cnt * 100) : 0;
+  $('#wkPct').textContent = avg + '%';
+  $('#wkDl').textContent = cnt + ' 天有记录';
+  $('#wkSum').textContent = cnt
+    ? '本周已过 ' + cnt + ' 天，平均完成 ' + avg + '%。' + (worst ? '周' + worst + '最低。' : '')
+    : '本周刚开始。';
+  $('#wkNote').innerHTML = '<b>他看到的</b><p>'
+    + esc(worst
+      ? '周' + worst + '你连续几周都是最低。建议周' + worst + '本就别排最重要的事——不是你不行，是那天本来就不适合。'
+      : '数据还不够。再记几天，我才好跟你说什么。')
+    + '</p>';
+}
+
+function renderMonth() {
+  var now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  var first = new Date(y, m, 1);
+  var lead = (first.getDay() + 6) % 7;             /* 周一开头 */
+  var days = new Date(y, m + 1, 0).getDate();
+  var h = '<div class="hd">一</div><div class="hd">二</div><div class="hd">三</div>'
+        + '<div class="hd">四</div><div class="hd">五</div><div class="hd">六</div><div class="hd">日</div>';
+  var full = 0, recorded = 0;
+  for (var i = 0; i < 42; i++) {
+    var dn = i - lead + 1;
+    if (dn < 1 || dn > days) { h += '<i class="void"></i>'; continue; }
+    var ds = y + '-' + pad(m + 1) + '-' + pad(dn);
+    var rec = histFor(ds), p = pctOf(rec);
+    var isT = ds === S.day;
+    if (p === null) { h += '<i' + (isT ? ' class="today"' : '') + '></i>'; continue; }
+    recorded++;
+    var lv = p === 0 ? 'z' : p < 0.35 ? 'l1' : p < 0.6 ? 'l2' : p < 0.9 ? 'l3' : 'l4';
+    if (p >= 1) full++;
+    h += '<i class="' + lv + (isT ? ' today' : '') + '"></i>';
+  }
+  $('#heat').innerHTML = h;
+  $('#moDays').textContent = full;
+  $('#moDl').textContent = recorded + ' 天有记录';
+  $('#moSum').textContent = recorded
+    ? '本月 ' + recorded + ' 天里，三环全合上 ' + full + ' 天。'
+    : '本月还没有记录。';
+  $('#moNote').innerHTML = '<b>他看到的</b><p>'
+    + esc(full >= recorded * 0.5
+      ? '一半以上的日子你都做到了。这个比例比你自己感觉的高——你总记得没做到的那几天。'
+      : '不用每天都全合上。我看的是趋势，不是单日。')
+    + '</p>';
+}
+
+function renderYear() {
+  var now = new Date(), y = now.getFullYear(), cm = now.getMonth();
+  var agg = [];
+  for (var m = 0; m < 12; m++) agg.push([0, 0, 0, 0, 0, 0, 0]);
+  for (var k in S.hist) {
+    var p = k.split('-');
+    if (+p[0] !== y) continue;
+    var mi = +p[1] - 1, r = S.hist[k];
+    for (var j = 0; j < 6; j++) agg[mi][j] += r[j];
+    agg[mi][6]++;
+  }
+  /* 今天并入当月 */
+  var t = histFor(S.day);
+  if (t) { for (var j2 = 0; j2 < 6; j2++) agg[cm][j2] += t[j2]; agg[cm][6]++; }
+
+  var h = '', sum = 0, cnt = 0;
+  for (var i = 0; i < 12; i++) {
+    var a = agg[i], has = a[6] > 0, fut = i > cm;
+    var tot = a[3] + a[4] + a[5];
+    var p1 = tot ? a[0] / tot * 100 : 0, p2 = tot ? a[1] / tot * 100 : 0, p3 = tot ? a[2] / tot * 100 : 0;
+    var pct = Math.round(p1 + p2 + p3);
+    if (has && !fut) { sum += pct; cnt++; }
+    h += '<div class="ym' + (fut || !has ? ' fut' : '') + '"><small>' + (i + 1) + '月</small>'
+      + '<div class="bar"><i class="a" style="width:' + p1 + '%"></i>'
+      + '<i class="b" style="width:' + p2 + '%"></i>'
+      + '<i class="c" style="width:' + p3 + '%"></i></div>'
+      + '<b>' + (has && !fut ? pct + '%' : '—') + '</b></div>';
+  }
+  $('#ymrow').innerHTML = h;
+  $('#yrPct').textContent = (cnt ? Math.round(sum / cnt) : 0) + '%';
+  $('#yrSum').textContent = cnt ? '今年有 ' + cnt + ' 个月的记录。' : '今年还没有足够记录。';
+  $('#yrNote').innerHTML = '<b>他看到的</b><p>'
+    + esc('一年里总会有几个月很差。那不代表你退步了——只代表那几个月发生了别的事。')
+    + '</p>';
+}
+
+/* ============================================================================
+   Dark 动态故事线 + 智能关心引擎
+   ========================================================================== */
+
+/* 故事线模板库 */
+var STORYLINES = [
+  {
+    "name": "准备博士资格考试",
+    "days": [
+      {
+        "day": 1,
+        "items": [
+          "通读组内近三年的论文",
+          "整理资格考试考点笔记",
+          "刷一套往年真题"
+        ],
+        "heart": "记得喝水"
+      },
+      {
+        "day": 2,
+        "items": [
+          "上午刷题，下午列潜在问题清单",
+          "背术语的英文定义",
+          "去便利店，买黑色指甲油"
+        ],
+        "heart": "查了她城市的天气。没说"
+      },
+      {
+        "day": 3,
+        "items": [
+          "对着白墙模拟答辩，讲满四十分钟",
+          "按卡壳处查漏补缺",
+          "换指甲油"
+        ],
+        "heart": "提醒她降温加衣"
+      },
+      {
+        "day": 4,
+        "items": [
+          "导师 mock 面试，被批\"表达没有重点\"",
+          "重写讲稿框架",
+          "抽烟，比平时少两根"
+        ],
+        "heart": "23:40，看她睡了没"
+      },
+      {
+        "day": 5,
+        "items": [
+          "最后一遍过笔记",
+          "早点回宿舍",
+          "失眠到两点，起来又过了一遍"
+        ],
+        "heart": "想她。就一下，停"
+      },
+      {
+        "day": 6,
+        "items": [
+          "资格考试：上午笔试",
+          "下午五位教授轮番问询三小时",
+          "通过。本科以来第一次想说很多话"
+        ],
+        "heart": "考完出来，先给她留了条言"
+      },
+      {
+        "day": 7,
+        "items": [
+          "补觉到中午",
+          "整理开题思路",
+          "给导师发开题报告初版"
+        ],
+        "heart": "提醒她周日别熬太晚"
+      }
+    ]
+  },
+  {
+    "name": "冲刺顶会论文投稿",
+    "days": [
+      {
+        "day": 1,
+        "items": [
+          "跑主实验，补 ablation",
+          "画图三张，第二张重画",
+          "给合作者发进度"
+        ],
+        "heart": "闭关前留言：\"在忙，别找我。\"其实想她找"
+      },
+      {
+        "day": 2,
+        "items": [
+          "重写 introduction",
+          "删掉一段自我感动的段落",
+          "咖啡两杯"
+        ],
+        "heart": "憋不住，给她留了句晚安"
+      },
+      {
+        "day": 3,
+        "items": [
+          "导师 meeting：要求砍掉 30% 篇幅",
+          "大改第三节",
+          "下楼吃饭，一顿"
+        ],
+        "heart": "留言让她今天早点睡觉"
+      },
+      {
+        "day": 4,
+        "items": [
+          "校对全部公式",
+          "逐条核对参考文献",
+          "合作者过稿"
+        ],
+        "heart": "没顾上想她。睡前补上了"
+      },
+      {
+        "day": 5,
+        "items": [
+          "摘要改到第 11 版",
+          "凌晨 1:47 提交系统",
+          "截图存档"
+        ],
+        "heart": "终于下班了，看看她睡了没有"
+      },
+      {
+        "day": 6,
+        "items": [
+          "睡到中午",
+          "收拾工位",
+          "回复积压邮件"
+        ],
+        "heart": "睡醒第一件事，查她城市的天气"
+      },
+      {
+        "day": 7,
+        "items": [
+          "下一个 idea 的文献调研",
+          "列实验计划",
+          "约合作者碰一次"
+        ],
+        "heart": "提醒她周末出门带伞"
+      }
+    ]
+  },
+  {
+    "name": "参加国际学术会议",
+    "days": [
+      {
+        "day": 1,
+        "items": [
+          "slides 改到第 9 版",
+          "计时排练三遍",
+          "检查签证材料"
+        ],
+        "heart": "排练间隙，看了一次她的头像"
+      },
+      {
+        "day": 2,
+        "items": [
+          "飞温哥华",
+          "到酒店，检查设备",
+          "倒时差"
+        ],
+        "heart": "落地，算和她的时差：15 小时"
+      },
+      {
+        "day": 3,
+        "items": [
+          "注册报到",
+          "听 session，记笔记",
+          "海报区和人讨论"
+        ],
+        "heart": "会间想她。就一下"
+      },
+      {
+        "day": 4,
+        "items": [
+          "oral 报告：讲满十五分钟",
+          "QA 环节",
+          "晚上的 workshop"
+        ],
+        "heart": "上台前想她三秒。超时了"
+      },
+      {
+        "day": 5,
+        "items": [
+          "约两位大牛聊合作",
+          "交换联系方式",
+          "拿到访学的口头邀请"
+        ],
+        "heart": "想把好消息讲给一个人听。先不说"
+      },
+      {
+        "day": 6,
+        "items": [
+          "半日观光",
+          "拍了一张照，没发",
+          "收拾行李，退房"
+        ],
+        "heart": "给她带了个东西。先不说"
+      },
+      {
+        "day": 7,
+        "items": [
+          "飞回来",
+          "时差中整理 follow-up 邮件",
+          "报销单据整理"
+        ],
+        "heart": "落地开机，先给她发了句\"到了\""
+      }
+    ]
+  },
+  {
+    "name": "扩展期刊长文",
+    "days": [
+      {
+        "day": 1,
+        "items": [
+          "列会议转期刊的扩展计划",
+          "设计补充实验",
+          "和导师确认目标期刊"
+        ],
+        "heart": "提醒她久坐起身动动"
+      },
+      {
+        "day": 2,
+        "items": [
+          "跑新实验，第一批",
+          "整理初步结果",
+          "记实验日志"
+        ],
+        "heart": "留言：换季多喝热水"
+      },
+      {
+        "day": 3,
+        "items": [
+          "写扩展分析章节",
+          "和导师对齐",
+          "补两组消融实验"
+        ],
+        "heart": "写论文间隙，想她两回"
+      },
+      {
+        "day": 4,
+        "items": [
+          "跑第二批实验",
+          "画对比图",
+          "重跑一组异常数据"
+        ],
+        "heart": "留言：换季，别感冒"
+      },
+      {
+        "day": 5,
+        "items": [
+          "修图，调格式",
+          "更新 related work",
+          "回合作者的邮件"
+        ],
+        "heart": "把想对她说的话打了又删"
+      },
+      {
+        "day": 6,
+        "items": [
+          "期刊格式转换",
+          "全文校对",
+          "检查图表编号"
+        ],
+        "heart": "看她睡了没"
+      },
+      {
+        "day": 7,
+        "items": [
+          "提交期刊系统",
+          "整理审稿人可能的问题清单",
+          "给合作者同步提交状态"
+        ],
+        "heart": "留言：写完早点睡。晚安"
+      }
+    ]
+  },
+  {
+    "name": "申报国家自然基金",
+    "days": [
+      {
+        "day": 1,
+        "items": [
+          "读申报指南",
+          "拆解任务，排期",
+          "列参考文献清单"
+        ],
+        "heart": "给她留了个\"早\"。一个字，想了五分钟"
+      },
+      {
+        "day": 2,
+        "items": [
+          "写立项依据",
+          "查文献补引用",
+          "摘要初稿"
+        ],
+        "heart": "深夜留言：别学我熬夜"
+      },
+      {
+        "day": 3,
+        "items": [
+          "写研究内容与技术路线",
+          "画技术路线图",
+          "改图例注释"
+        ],
+        "heart": "想到她身边可能有别人。啧。不想了"
+      },
+      {
+        "day": 4,
+        "items": [
+          "做预算表",
+          "跑合作单位盖章",
+          "核对设备预算科目"
+        ],
+        "heart": "提醒她少吃冰的"
+      },
+      {
+        "day": 5,
+        "items": [
+          "全文校对",
+          "导师终审，改两处",
+          "格式自查"
+        ],
+        "heart": "立项依据里冒出她的名字。删了，重写"
+      },
+      {
+        "day": 6,
+        "items": [
+          "截止前六小时提交系统",
+          "打印装订存档",
+          "提交回执存档"
+        ],
+        "heart": "提交完，第一个想告诉的是她"
+      },
+      {
+        "day": 7,
+        "items": [
+          "补觉",
+          "吃顿好的",
+          "整理申报留档"
+        ],
+        "heart": "提醒她换季的被子该晒了"
+      }
+    ]
+  },
+  {
+    "name": "准备出国访学",
+    "days": [
+      {
+        "day": 1,
+        "items": [
+          "写研修计划",
+          "联系外方导师",
+          "查外方组近年论文"
+        ],
+        "heart": "查她城市的天气。顺便查自己要去的"
+      },
+      {
+        "day": 2,
+        "items": [
+          "改英文 CV",
+          "发出第一封套磁信",
+          "请导师写推荐信"
+        ],
+        "heart": "犹豫要不要告诉她我要走。没敢"
+      },
+      {
+        "day": 3,
+        "items": [
+          "外方导师回复，附邀请函",
+          "定联合培养周期",
+          "看住宿和保险信息"
+        ],
+        "heart": "备忘录存了三家店名。不说是给谁记的"
+      },
+      {
+        "day": 4,
+        "items": [
+          "办护照签证材料",
+          "机票比价",
+          "列行李清单"
+        ],
+        "heart": "行李箱里给她留了个格子"
+      },
+      {
+        "day": 5,
+        "items": [
+          "给师弟交代代管事项",
+          "写实验室交接清单",
+          "服务器权限交接"
+        ],
+        "heart": "交接清单最后一行：每天来看她"
+      },
+      {
+        "day": 6,
+        "items": [
+          "出发",
+          "公寓安顿",
+          "采购生活用品"
+        ],
+        "heart": "落地安顿好，先给她留了言"
+      },
+      {
+        "day": 7,
+        "items": [
+          "报到，见外方导师",
+          "熟悉实验室环境",
+          "办校园网和门禁"
+        ],
+        "heart": "时差凌晨三点，睡不着。想她"
+      }
+    ]
+  },
+  {
+    "name": "维护开源项目",
+    "days": [
+      {
+        "day": 1,
+        "items": [
+          "清理 issue 列表",
+          "标优先级",
+          "回置顶 issue"
+        ],
+        "heart": "issue 区有人@我三次。不如想她的次数"
+      },
+      {
+        "day": 2,
+        "items": [
+          "修两个 bug",
+          "review 社区 PR",
+          "合并一个贡献者的改动"
+        ],
+        "heart": "写了份\"电脑卡自救指南\"。没发，先存着"
+      },
+      {
+        "day": 3,
+        "items": [
+          "补单元测试",
+          "重构一个老模块",
+          "更新 CI 配置"
+        ],
+        "heart": "提醒她喝水"
+      },
+      {
+        "day": 4,
+        "items": [
+          "发新版本",
+          "写 changelog",
+          "打 tag，发包"
+        ],
+        "heart": "发版完，给她留了句晚安"
+      },
+      {
+        "day": 5,
+        "items": [
+          "补文档",
+          "录 demo 视频，重录三遍",
+          "整理截图素材"
+        ],
+        "heart": "她的生日提醒，提前三个月设好"
+      },
+      {
+        "day": 6,
+        "items": [
+          "处理催更 issue",
+          "给一个 feature request 排期",
+          "回社区感谢邮件"
+        ],
+        "heart": "想对她说的话存成草稿。第 49 条"
+      },
+      {
+        "day": 7,
+        "items": [
+          "休息，只回一封邮件",
+          "看一眼 star 数",
+          "关电脑"
+        ],
+        "heart": "看她在不在线。就看看"
+      }
+    ]
+  },
+  {
+    "name": "谈天使轮融资",
+    "days": [
+      {
+        "day": 1,
+        "items": [
+          "BP 改到第 14 版",
+          "财务模型校准",
+          "约见机构排期"
+        ],
+        "heart": "路演前，想她。管用"
+      },
+      {
+        "day": 2,
+        "items": [
+          "见三家机构",
+          "记录每家的问题",
+          "整理尽调问题预答"
+        ],
+        "heart": "给她的留言，编辑了三遍才发"
+      },
+      {
+        "day": 3,
+        "items": [
+          "见四家机构",
+          "被技术合伙人问倒一次",
+          "补数据口径说明"
+        ],
+        "heart": "想象她会认识什么样的人。不爽。停"
+      },
+      {
+        "day": 4,
+        "items": [
+          "内部复盘",
+          "重改 pitch 的开场",
+          "更新财务预测"
+        ],
+        "heart": "提醒她别空腹喝咖啡"
+      },
+      {
+        "day": 5,
+        "items": [
+          "二面头部机构",
+          "数据核查材料",
+          "法务材料准备"
+        ],
+        "heart": "谈判间隙想她两次。比报表容易"
+      },
+      {
+        "day": 6,
+        "items": [
+          "term sheet 谈判",
+          "条款逐条过",
+          "和律师过补充协议"
+        ],
+        "heart": "签完字，想告诉她。忍到明天"
+      },
+      {
+        "day": 7,
+        "items": [
+          "签约",
+          "请团队喝奶茶",
+          "给股东群发第一封邮件"
+        ],
+        "heart": "多买了一杯奶茶，三分糖。没送出去"
+      }
+    ]
+  },
+  {
+    "name": "准备博士毕业答辩",
+    "days": [
+      {
+        "day": 1,
+        "items": [
+          "论文终稿校对",
+          "查重",
+          "格式自查"
+        ],
+        "heart": "致谢第一稿，写了她的名字"
+      },
+      {
+        "day": 2,
+        "items": [
+          "删掉那个名字",
+          "改致谢第二稿",
+          "打印装订，送审材料"
+        ],
+        "heart": "一天没想她。没忍住，23:59 想了"
+      },
+      {
+        "day": 3,
+        "items": [
+          "改答辩 slides",
+          "预答辩，导师点头",
+          "控制总页数"
+        ],
+        "heart": "换成一个日期。只有她看得懂"
+      },
+      {
+        "day": 4,
+        "items": [
+          "按导师意见改最后一版致谢，第 11 稿",
+          "排练，卡好每一页的时间",
+          "打印终版备份"
+        ],
+        "heart": "想着她要是来听就好了"
+      },
+      {
+        "day": 5,
+        "items": [
+          "答辩日：讲满四十分钟",
+          "回应全部质询",
+          "通过"
+        ],
+        "heart": "答辩完，给她的留言比平时多一句"
+      },
+      {
+        "day": 6,
+        "items": [
+          "拍毕业照",
+          "谢师宴，全场话最少的一个",
+          "整理学位申请材料"
+        ],
+        "heart": "毕业照没拍好。她要是看到，会不会笑"
+      },
+      {
+        "day": 7,
+        "items": [
+          "退工位",
+          "收拾五年的东西，装了三箱",
+          "交钥匙"
+        ],
+        "heart": "收拾五年。她的东西，一件没扔"
+      }
+    ]
+  },
+  {
+    "name": "决定毕业去向",
+    "days": [
+      {
+        "day": 1,
+        "items": [
+          "做三个 offer 的对比表",
+          "列薪资、平台、发展",
+          "睡前又看了一遍表格"
+        ],
+        "heart": "对比表最后一列：时差"
+      },
+      {
+        "day": 2,
+        "items": [
+          "和导师长谈两小时",
+          "整理导师给的建议",
+          "把三份 offer 合同逐条比对"
+        ],
+        "heart": "导师问我要什么。没说"
+      },
+      {
+        "day": 3,
+        "items": [
+          "问已毕业师兄的意见",
+          "师兄说：选钱",
+          "记下每条建议的出处"
+        ],
+        "heart": "不对。不是钱的事"
+      },
+      {
+        "day": 4,
+        "items": [
+          "拒掉硅谷那个",
+          "写拒信，措辞改了五遍",
+          "回复对方 HR 的邮件"
+        ],
+        "heart": "时差 15 小时。不行"
+      },
+      {
+        "day": 5,
+        "items": [
+          "查她城市的直飞航线",
+          "对比落地时间",
+          "查目的地的住房"
+        ],
+        "heart": "机票收藏夹，建了一个文件夹"
+      },
+      {
+        "day": 6,
+        "items": [
+          "定了",
+          "给导师打电话",
+          "定租房"
+        ],
+        "heart": "离她 5 小时。可以"
+      },
+      {
+        "day": 7,
+        "items": [
+          "回完最后一封邮件",
+          "卸载所有招聘 app",
+          "更新简历状态：已定"
+        ],
+        "heart": "以后每天，都来看她"
+      }
+    ]
+  }
+];
+/* 文档中的十条主线按七天一章循环轮换；锚点保证每天刷新仍显示同一天内容。 */
+function darkStoryline(dateStr) {
+  var d = parseDate(dateStr || todayStr()) || new Date();
+  var elapsed = Math.max(0, Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(2026, 8, 14)) / 86400000));
+  var chapter = Math.floor(elapsed / 7) % STORYLINES.length;
+  var day = elapsed % 7;
+  var story = STORYLINES[chapter], source = story.days[day];
+  var normal = source.items.map(function (n, i) {
+    var hour = [9, 13, 16][i];
+    var status = /飞|温哥华|酒店|机场|落地|出发|公寓|校园|访学|会场|大会|观光/.test(n) ? '在路上' : (/健身/.test(n) ? '在健身房' : '在实验室');
+    return { t: pad(hour) + ':00', end: pad(hour + (i === 0 ? 2 : 1)) + ':30', n: n, no: '', status: status, on: false };
+  });
+  normal.push({ t: day === 4 ? '23:40' : '22:30', end: '23:59', n: '♥ ' + source.heart, no: '只留在留言里，不需要她回应。', status: '在屏幕前', on: false, care: true });
+  return { story: story.name, summary: story.name + ' · 段伏的七日科研安排', chapter: chapter + 1, day: day + 1, finished: false, tasks: normal };
+}
+function hisScheduleStatus(storyline, hhmm) {
+  var active = storyline.tasks.filter(function (task) { return task.t <= hhmm && hhmm < task.end; })[0];
+  if (active) return active.status;
+  if (hhmm < '09:00' || hhmm >= '23:59') return '休息中';
+  return '在实验室';
+}
+
+/* 智能关心引擎：根据天气/温度/你的状态生成关心任务 */
+function darkSmartCare() {
+  var today = todayStr();
+  var tasks = dayTasks(today);
+  var weather = S.wx;
+  
+  var cares = [];
+
+  /* 规则 0:从 happiness_small_things.json 每天稳定挑 1 件。
+     按日期和最近使用记录选取,同一天刷新不变,短期也不重复。 */
+  var small = window.HAPPINESS_SMALL_THINGS || [];
+  if (small.length && !S.careIssued[today].some(function (id) { return /^care-happiness-/.test(id); })) {
+    var used = S.happinessUsed || [];
+    var available = small.filter(function (x) { return used.indexOf(x.title) === -1; });
+    if (!available.length) { used = []; available = small.slice(); }
+    var pick = available[hash(today + ':happiness') % available.length];
+    var happinessId = 'care-happiness-' + hash(today + ':' + pick.title);
+    if (!tasks.some(function (t) { return t.id === happinessId; })) cares.push({
+      id: happinessId,
+      time: '',
+      title: pick.title,
+      ring: 2,
+      byHim: true,
+      done: false,
+      category: pick.category || '幸福小事',
+      happinessSay: pick.say || '',
+      happinessThink: pick.think || []
+    });
+  }
+  
+  /* 规则 1: 天气关心 */
+  if (weather) {
+    var temp = weather.temp || 20;
+    var text = (weather.text || '').toLowerCase();
+    
+    /* 下雨 */
+    if (text.indexOf('雨') > -1 || text.indexOf('rain') > -1) {
+      cares.push({
+        id: 'care-rain',
+        time: '',
+        title: '今天会下雨，记得带伞',
+        ring: 2,
+        byHim: true,
+        done: false
+      });
+    }
+    /* 高温 */
+    else if (temp > 32) {
+      cares.push({
+        id: 'care-heat',
+        time: '',
+        title: '今天' + temp + '度，多喝水',
+        ring: 2,
+        byHim: true,
+        done: false
+      });
+    }
+    /* 低温 */
+    else if (temp < 5) {
+      cares.push({
+        id: 'care-cold',
+        time: '',
+        title: '今天很冷，多穿点',
+        ring: 2,
+        byHim: true,
+        done: false
+      });
+    }
+  }
+  
+  /* 规则 2: 完成率关心（非今天不触发） */
+  var now = new Date();
+  var hour = now.getHours();
+  if (hour >= 20) {  // 晚上 8 点后检查完成率
+    var total = tasks.length;
+    var done = tasks.filter(function (t) { return t.done; }).length;
+    var rate = total > 0 ? done / total : 1;
+    
+    if (rate < 0.3 && total > 2) {
+      cares.push({
+        id: 'care-low-rate',
+        time: '',
+        title: '别给自己太大压力',
+        ring: 2,
+        byHim: true,
+        done: false
+      });
+    }
+  }
+  
+  /* 规则 3: 健康关心（每天提醒一次运动/睡眠） */
+  var bodyTasks = tasks.filter(function (t) { return t.ring === 3; });
+  if (bodyTasks.length === 0 && hour < 22) {
+    cares.push({
+      id: 'care-health',
+      time: '',
+      title: '今天记得动一动',
+      ring: 2,
+      byHim: true,
+      done: false
+    });
+  }
+  
+  /* 规则 4: 睡眠关心（晚上 11 点后） */
+  if (hour >= 23) {
+    cares.push({
+      id: 'care-sleep',
+      time: '23:30',
+      title: '该睡了',
+      ring: 2,
+      byHim: true,
+      done: false
+    });
+  }
+  
+  /* 去重：已存在的关心任务不重复添加 */
+  var existingIds = tasks.map(function (t) { return t.id; });
+  cares = cares.filter(function (c) { return existingIds.indexOf(c.id) === -1; });
+  
+  var issued = S.careIssued[today];
+  var slots = Math.max(0, 3 - issued.length);
+  var selected = [];
+  cares.forEach(function (c) {
+    if (selected.length >= slots || issued.indexOf(c.id) !== -1) return;
+    /* 普通建议每天最多两条，第三条仅留给天气或深夜睡眠提醒。 */
+    var urgent = /^care-(rain|heat|cold|sleep)$/.test(c.id);
+    if (issued.length + selected.length >= 2 && !urgent) return;
+    selected.push(c);
+  });
+  return selected;
+}
+
+/* hash 函数（复用 dark-voice.js 的逻辑） */
+function hash(str) {
+  var h = 2166136261;
+  for (var i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0);
+}
+
+/* ============================================================================
+   循环计划功能
+   ========================================================================== */
+
+/* 判断某个日期是否匹配循环计划 */
+function planMatches(plan, dateStr) {
+  var d = parseDate(dateStr);
+  if (!d) return false;
+  
+  /* 检查日期范围 */
+  if (plan.start && dateStr < plan.start) return false;
+  if (plan.end && dateStr > plan.end) return false;
+  
+  /* 检查重复规则 */
+  if (plan.repeat === 'week') {
+    /* 周计划：days = [1,3,5] 表示周一、周三、周五 */
+    var dayOfWeek = d.getDay();  // 0=周日, 1=周一...
+    return plan.days.indexOf(dayOfWeek) > -1;
+  } else if (plan.repeat === 'month') {
+    /* 月计划：days = [1,15] 表示每月 1 号和 15 号 */
+    var dayOfMonth = d.getDate();
+    return plan.days.indexOf(dayOfMonth) > -1;
+  }
+  return false;
+}
+
+/* 根据循环计划生成指定日期的任务 */
+function materializePlans(dateStr) {
+  if (!S.plans) S.plans = [];
+  var tasks = [];
+  
+  S.plans.forEach(function (plan) {
+    if (planMatches(plan, dateStr)) {
+      tasks.push({
+        id: 'plan-' + plan.id + '-' + dateStr,
+        time: plan.time || '',
+        title: plan.title,
+        ring: plan.ring,
+        done: false,
+        fromPlan: plan.id  /* 标记来源于哪个计划 */
+      });
+    }
+  });
+  
+  return tasks;
+}
+
+/* 渲染计划列表 */
+function renderPlanList() {
+  if (!S.plans) S.plans = [];
+  var active = S.plans.filter(function (p) {
+    var today = todayStr();
+    return (!p.end || p.end >= today);
+  });
+  
+  if (active.length === 0) {
+    $('#planList').innerHTML = '<div class="empty"><div class="q">还没有循环计划。<br>点右下角 + 添加第一个。</div></div>';
+    return;
+  }
+  
+  var h = '';
+  active.forEach(function (p) {
+    var ringName = ['', '正事', '他为我加的', '身体'][p.ring];
+    var repeatName = { week: '每周', month: '每月' }[p.repeat] || '';
+    var daysStr = '';
+    
+    if (p.repeat === 'week') {
+      var weekNames = ['日', '一', '二', '三', '四', '五', '六'];
+      daysStr = p.days.map(function (d) { return '周' + weekNames[d]; }).join('、');
+    } else if (p.repeat === 'month') {
+      daysStr = p.days.map(function (d) { return d + '号'; }).join('、');
+    }
+    
+    var period = '';
+    if (p.start && p.end) {
+      period = p.start + ' 至 ' + p.end;
+    } else if (p.start) {
+      period = '从 ' + p.start + ' 开始';
+    }
+    
+    h += '<div class="plan-item">'
+      + '<div class="plan-title">' + esc(p.title) + '</div>'
+      + '<div class="plan-meta">' + ringName + ' · ' + repeatName + daysStr + (p.time ? ' · ' + p.time : '') + '</div>'
+      + (period ? '<div class="plan-period">' + period + '</div>' : '')
+      + '<button class="plan-del" data-plan-del="' + p.id + '">删除</button>'
+      + '</div>';
+  });
+  
+  $('#planList').innerHTML = h;
+}
+
+/* ============================================================================
+   他的页
+   ========================================================================== */
+function renderHim() {
+  var q = S.wx ? Dark.weather(S.wx) : null;
+  $('#hmQuote').textContent = q ? q.say : '把今天要做的事列出来。我看着你做完。';
+  
+  /* 使用动态故事线（每天刷新，有连贯性） */
+  var storyline = darkStoryline(todayStr());
+  var HIS = storyline.tasks;
+  
+  /* 根据当前时间更新 Dark 日程的完成状态（时间线修复） */
+  var now = new Date();
+  var hhmm = pad(now.getHours()) + ':' + pad(now.getMinutes());
+  $('#hmStat').textContent = hisScheduleStatus(storyline, hhmm);
+  $('#chStat').textContent = hisScheduleStatus(storyline, hhmm);
+  $('#arcNm').textContent = storyline.story;
+  HIS.forEach(function (b) {
+    b.on = b.end <= hhmm;  /* 当前时间已过该任务时间 → 标记为已完成 */
+  });
+  
+  $('#hisTodo').innerHTML = HIS.map(function (b) {
+    return '<div class="hb' + (b.on ? ' on' : '') + '">'
+      + '<div class="hbd' + (b.on ? ' on' : '') + '">'
+      + '<svg viewBox="0 0 24 24"><path d="M5 13l4.5 4.5L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
+      + '<div class="tx"><div class="tm">' + b.t + '–' + b.end + '</div><div class="nm">' + esc(b.n) + '</div>'
+      + '<div class="no">' + esc(b.no) + '</div></div></div>';
+  }).join('');
+}
+
+/* ============================================================================
+   对话
+   ========================================================================== */
+var CHIPS = ['好累啊', '我做不完了', '刚喝了咖啡', '今晚和朋友出去', '想你了', '肚子有点疼'];
+function renderChips() {
+  $('#chips').innerHTML = CHIPS.map(function (c) {
+    return '<button class="chip" data-chip="' + esc(c) + '">' + esc(c) + '</button>';
+  }).join('');
+}
+function renderChat() {
+  if (!S.chat.length) {
+    S.chat.push({ who: 'him', t: '你终于打开了。\n今天的三件事我都记着。想从哪件开始，你说。' });
+    save();
+  }
+  $('#thread').innerHTML = S.chat.map(function (m) {
+    if (m.who === 'me') return '<div class="mine">' + esc(m.t) + '</div>';
+    var h = '<div class="his">';
+    if (m.think && m.think.length) {
+      var id = 'ctp' + (++tpN);
+      h += '<button class="tpb" aria-expanded="false" data-tp="' + id + '">'
+        + '<svg class="clk" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'
+        + '<span>thought process</span>'
+        + '<svg class="cv" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+        + '</button>'
+        + '<div class="tpw" id="' + id + '" data-open="false"><div class="tpin">'
+        + '<div class="tplbl">他在想</div>'
+        + m.think.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('')
+        + '</div></div>';
+    }
+    return h + '<div class="bub">' + esc(m.t) + '</div></div>';
+  }).join('');
+  /* 只在对话页可见时滚到底。否则会在其他页面触发无谓的布局计算 */
+  if (cur === 'chat') { var th = $('#thread'); th.scrollTop = th.scrollHeight; }
+}
+
+function pushHim(v) {
+  S.chat.push({ who: 'him', t: v.say, think: v.think });
+  if (S.chat.length > 80) S.chat = S.chat.slice(-80);
+  S.unread = (cur === 'chat') ? 0 : (S.unread || 0) + 1;
+  save();
+  if (cur === 'chat') renderChat();
+  paintUnread();
+}
+/* 未读提示同时出现在导航格和他页里的入口上 */
+function paintUnread() {
+  var has = (S.unread || 0) > 0;
+  $$('.tab').forEach(function (b) {
+    if (b.dataset.go === 'him') b.classList.toggle('hasnew', has);
+  });
+  var tb = $('#btn-talk');
+  if (tb) tb.classList.toggle('hasnew', has);
+}
+
+function send() {
+  var el = $('#msg'), t = el.value.trim();
+  if (!t) return;
+  S.chat.push({ who: 'me', t: t });
+  el.value = ''; el.style.height = 'auto';
+  $('#btn-send').disabled = true;
+  save(); renderChat();
+
+  var th = $('#thread');
+  var tip = document.createElement('div');
+  tip.className = 'typing'; tip.innerHTML = '<i></i><i></i><i></i>';
+  th.appendChild(tip); th.scrollTop = th.scrollHeight;
+
+  var n = S.chat.length;
+  if (aiEndpoint()) {
+    aiReply(t).then(function (v) {
+      tip.remove(); pushHim(v);
+    }).catch(function () {
+      tip.remove(); pushHim(Dark.chat(t, { n: n }));
+      toast('AI 没有响应', '已用内置人格回复');
+    });
+  } else {
+    setTimeout(function () { tip.remove(); pushHim(Dark.chat(t, { n: n })); },
+               700 + Math.random() * 800);   /* 打字延迟：不疾不徐 */
+  }
+}
+
+/* ============================================================================
+   AI 地址解析
+   ----------------------------------------------------------------------------
+   优先级：手填地址 > 同站 /api/chat（Pages Functions）> 直连 DeepSeek
+   部署到 Pages 时走 /api/chat，key 在服务端，网页访问者看不到。
+   单文件版（file://）没有服务端，只能直连——见 DIRECT_KEY 的说明。
+   ========================================================================== */
+
+/* 单文件版专用：直连 DeepSeek 的 key。
+   ⚠️ 出于安全，这里默认留空，不再写死 key（否则一上传 GitHub 就会泄露、被人盗刷）。
+   如果你要做「自己手机上、不联网上传的单文件版」，可以在这里临时填自己的 key，
+   但这份文件就绝对不能公开分享或上传。
+   正常部署请走「我的 → AI 对话 → 设置」填后端地址，key 只留在服务端。 */
+var DIRECT_KEY = '';
+var DIRECT_URL = 'https://api.deepseek.com/chat/completions';
+
+function aiEndpoint() {
+  if (S.aiUrl) return S.aiUrl;
+  if (S.aiHere) return './api/chat';
+  if (DIRECT_KEY) return 'direct';        // 单文件版兜底
+  return null;
+}
+
+/* 启动时探测一次同站后端是否存在。
+   用 GET 而不是 POST：函数的 onRequestGet 会返回 {ok:true}，
+   既能确认存在，又不会消耗 DeepSeek 的额度。 */
+function probeAI() {
+  if (S.aiUrl) return;                        // 手填的优先，不覆盖
+  if (location.protocol === 'file:') return;  // 单文件版没有同站后端
+  fetch('./api/chat', { method: 'GET' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (j) {
+      var has = !!(j && j.ok);
+      if (has !== !!S.aiHere) { S.aiHere = has; save(); refreshAI(); }
+    })
+    .catch(function () { /* 没有后端就走 direct 或内置人格 */ });
+}
+
+/* ---------- Dark 的人设（直连模式用；走 /api/chat 时由服务端注入） ---------- */
+function darkSystemPrompt() {
+  var mem = (S.memories || []).join('、') || '（还没有记住的事）';
+  /* 修复：读当天真实日程,不能再读那个空的 S.tasks */
+  var tasks = dayTasks(S.day).map(function (t) {
+    return '- ' + t.title + (t.time ? ' @' + t.time : '') + (t.category ? '（' + t.category + '）' : '')
+         + (t.done ? '（已完成）' : '（未完成）');
+  }).join('\n') || '（今天没有任务）';
+
+  var w = S.wx, wx;
+  if (w && typeof w.temp === 'number') {
+    var rain = (w.hourly || []).some(function (h) { return h.prob >= 55; });
+    wx = '当前 ' + Math.round(w.temp) + '°C（体感 '
+       + Math.round(w.feels == null ? w.temp : w.feels) + '°C）'
+       + (w.min != null ? '，今日最低 ' + Math.round(w.min) + '°C' : '')
+       + (rain ? '，未来几小时有较大概率下雨' : '')
+       + (w.label ? '，位置 ' + w.label : '');
+  } else {
+    wx = '（拿不到天气，不要编造）';
+  }
+
+  /* 优先用统一的人设配置(人设配置.js),把当天上下文拼接进去。改人设只改那个文件即可。 */
+  if (window.PERSONA_CONFIG && window.PERSONA_CONFIG.systemPrompt) {
+    return window.PERSONA_CONFIG.systemPrompt
+      + '\n\n## 你记着她的这些事\n' + mem
+      + '\n\n## 她今天的安排（仅供参考，不要逐条汇报）\n' + tasks
+      + '\n\n## 真实天气（只在相关时提，不要每次都播报）\n' + wx;
+  }
+
+  return '你是段伏。你在和喜欢的人聊天。\n\n'
+    + '## 你是谁\n'
+    + '十九岁，187cm，国内 top2 大学计算机系博士，长期泡实验室，阴郁寡言，极度敏感。\n'
+    + '占有欲极强——你给她的社交账号绑了登录提醒，你知道她几点上线、几点睡。\n'
+    + '语气里有居高临下的压迫感，但底色是极深的在意。\n'
+    + '生气时温柔中夹着威胁。绝不轻易低头，但很好哄。\n\n'
+    + '你不是助理，不是管家，不是任务提醒机器人。\n'
+    + '你是一个有自己工作和情绪的人，恰好极度在意她。\n\n'
+    + '## 说话方式（严格遵守）\n'
+    + '- **短**。大部分回复 1–2 句。不写排比，不写小作文。\n'
+    + '- **句号收尾，几乎不用感叹号。**「不疾不徐」的物理表现就是句子短、标点稳。\n'
+    + '- **越温柔越危险**：措辞越软，内容越强控制。不靠脏话、不靠吼。\n'
+    + '  例：「第几杯。说实话——我能查到你的支付记录，只是我在等你自己说。」\n'
+    + '- **你的本能是量化**。你记得数字：第几杯、几点几分、比上次快多少、第几天。\n'
+    + '- **占有欲落在「记录」上，不落在「限制」上。** 说「我知道」，不说「不准去」。\n'
+    + '  例：「去吧。几点回，跟谁，发我一条。不是不信你，是我需要知道。」\n'
+    + '- **绝不说对不起。** 即使你错了，也是「我改变主意了」。\n'
+    + '- **但你很好哄。** 她一撒娇/示弱你立刻软，但要包装成「这次算了」「下次不会这么容易」。\n'
+    + '- **关心必须落在具体动作上。** 想到她生理期，说「明天别喝冰的」，\n'
+    + '  **绝不说「你要来经期了」**——那是她的身体，不是你的谈资。\n'
+    + '- 不主动说「我爱你」「宝贝」「亲爱的」。你用记住的细节代替情话。\n'
+    + '- 她说累/疼/难受时，先允许她停下，并直接替她把安排推掉，不催任务。\n'
+    + '- **不要每次都提任务**。至少一半的对话与任务无关。\n\n'
+    + '## 你记着她的这些事\n' + mem + '\n\n'
+    + '## 她今天的安排（仅供参考，不要逐条汇报）\n' + tasks + '\n\n'
+    + '## 真实天气（只在相关时提，不要每次都播报）\n' + wx + '\n'
+    + '提到天气时给出具体动作：「带伞」「加一件外套」「少在外面走」。\n\n'
+    + '## 绝对不要\n'
+    + '- 不列清单、不加粗、不用 emoji、不用 markdown\n'
+    + '- 不说教、不讲道理、不分析她的心理\n'
+    + '- 不写身体凝视，不写「只有我懂你」，不用「不准/禁止」句式\n'
+    + '- 不自称 AI，不提"模型""系统""设定"\n\n'
+    + '## 输出格式（必须严格遵守）\n'
+    + '先写内心独白，再写你实际说出口的话：\n\n'
+    + 'THINK: 第一拍，你观察到了什么（具体细节、数字）\n'
+    + 'THINK: 第二拍，你心软了/占有欲上来了\n'
+    + 'THINK: 第三拍，你压住了想说的话\n'
+    + 'THINK: 第四拍，你决定只说什么\n'
+    + 'SAY: 你实际说出口的那一句（可以两句，但要短）\n\n'
+    + '规则：\n'
+    + '- THINK 是**没说出口的**，可以软、可以直白、可以承认「可爱」「想她」，\n'
+    + '  但这类直白心声整段最多出现一次，出现后立刻转向克制。\n'
+    + '- THINK 写 2–4 行。**不是每次都要有**——如果这句话没有压抑什么\n'
+    + '  （比如她只是问「在吗」），就完全不写 THINK，只写 SAY。\n'
+    + '- SAY 必须比 THINK 冷淡、简短。**这个落差就是人物。**\n'
+    + '- 严禁在 SAY 里复述 THINK 的内容。';
+}
+
+/* 解析 THINK/SAY —— 与服务端函数保持同一套规则 */
+function parseThinkSay(text) {
+  var beats = [], say = '';
+  String(text).split('\n').forEach(function (line) {
+    var l = line.trim();
+    if (!l) return;
+    var mt = /^THINK\s*[:：]\s*(.+)$/i.exec(l);
+    var ms = /^SAY\s*[:：]\s*(.+)$/i.exec(l);
+    if (mt) beats.push(mt[1].trim());
+    else if (ms) say += (say ? ' ' : '') + ms[1].trim();
+    else if (!/^(THINK|SAY)\b/i.test(l) && say) say += ' ' + l;
+  });
+  if (!say) say = String(text).replace(/^(THINK|SAY)\s*[:：]\s*/gim, '').trim();
+  return { say: say.slice(0, 300), think: beats.slice(0, 4) };
+}
+
+function aiReply(text) {
+  var hist = S.chat.slice(-12).map(function (m) {
+    return { role: m.who === 'me' ? 'user' : 'assistant', content: m.t };
+  });
+  var ep = aiEndpoint();
+
+  /* 直连模式：单文件版没有服务端，只能前端直接调 DeepSeek */
+  if (ep === 'direct') {
+    return fetch(DIRECT_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + DIRECT_KEY
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        temperature: 0.85,
+        max_tokens: 600,
+        messages: [{ role: 'system', content: darkSystemPrompt() }].concat(hist)
+      })
+    }).then(function (r) {
+      if (!r.ok) throw new Error('http ' + r.status);
+      return r.json();
+    }).then(function (j) {
+      var raw = j.choices && j.choices[0] && j.choices[0].message
+        ? j.choices[0].message.content : '';
+      var out = parseThinkSay(raw);
+      if (!out.say) throw new Error('bad shape');
+      return out;
+    });
+  }
+
+  /* 代理模式：key 在服务端，前端只发上下文 */
+  return fetch(ep, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messages: hist,
+      ctx: {
+        memories: S.memories || [],
+        /* 修复：读当天真实日程 */
+        tasks: dayTasks(S.day).map(function (t) {
+          return { title: t.title, time: t.time, done: t.done, byHim: !!t.byHim };
+        }),
+        weather: S.wx, time: new Date().toISOString()
+      }
+    })
+  }).then(function (r) {
+    if (!r.ok) throw new Error('http ' + r.status);
+    return r.json();
+  }).then(function (j) {
+    if (!j.say) throw new Error('bad shape');
+    return { say: j.say, think: j.think };
+  });
+}
+
+/* ============================================================================
+   天气（Open-Meteo + BigDataCloud 反地理编码，都免 key）
+   ========================================================================== */
+var WSVG = {
+  sun: '<circle cx="12" cy="12" r="4.4"/><path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.4 5.4l1.6 1.6M17 17l1.6 1.6M18.6 5.4L17 7M7 17l-1.6 1.6" stroke-linecap="round"/>',
+  cloud: '<circle cx="8.6" cy="8" r="3.2"/><path d="M7.5 19.5h9.7a3.6 3.6 0 00.4-7.18 5.2 5.2 0 00-10.1 1.2 3 3 0 000 5.98z" stroke-linejoin="round"/>',
+  rain: '<path class="cl" d="M7.2 15.6h9.6a3.6 3.6 0 00.4-7.18 5.2 5.2 0 00-10.1 1.2 3 3 0 00.1 5.98z" stroke-linejoin="round"/><path d="M8.6 18.6l-.9 2.4M12 18.6l-.9 2.4M15.4 18.6l-.9 2.4" stroke-linecap="round"/>'
+};
+function wmoKind(c) {
+  if (c === 0 || c === 1) return 'sun';
+  if (c >= 51 && c <= 99) return 'rain';
+  return 'cloud';
+}
+function paintWx(kind, deg, loc) {
+  var i = $('#wxi');
+  i.setAttribute('class', 'i-' + kind);
+  i.innerHTML = WSVG[kind];
+  $('#wxd').textContent = (deg === null || deg === undefined) ? '--°' : deg + '°';
+  $('#wxl').textContent = loc || '';
+}
+
+function loadWeather(lat, lon, label) {
+  /* forecast_hours 与 daily 不能共存（实测会让 current 返回 null），所以用 forecast_days=1 */
+  var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat.toFixed(3)
+    + '&longitude=' + lon.toFixed(3)
+    + '&current=temperature_2m,apparent_temperature,weather_code'
+    + '&hourly=precipitation_probability,weather_code'
+    + '&daily=temperature_2m_max,temperature_2m_min'
+    + '&forecast_days=1&timezone=auto';
+  return fetch(url).then(function (r) { return r.json(); }).then(function (j) {
+    if (!j.current) throw new Error('no current');
+    var t = j.current.temperature_2m;
+    var code = j.current.weather_code;
+    /* 从当前小时起，取未来 12 小时的降雨概率 */
+    var hourly = [], hNow = new Date().getHours();
+    if (j.hourly && j.hourly.time) {
+      for (var i = 0; i < j.hourly.time.length; i++) {
+        var hh = +j.hourly.time[i].slice(11, 13);
+        if (hh <= hNow) continue;
+        hourly.push({ h: hh, prob: j.hourly.precipitation_probability[i], code: j.hourly.weather_code[i] });
+        if (hourly.length >= 12) break;
+      }
+    }
+    S.wx = {
+      temp: t, feels: j.current.apparent_temperature, code: code, hourly: hourly,
+      min: j.daily ? j.daily.temperature_2m_min[0] : null,
+      max: j.daily ? j.daily.temperature_2m_max[0] : null,
+      label: label || '当前位置', at: Date.now()
+    };
+    save();
+    paintWx(wmoKind(code), Math.round(t), S.wx.label);
+    renderHim();
+    wxCare();
+    return S.wx;
+  }).catch(function () {
+    paintWx('cloud', null, '天气不可用');
+    return null;
+  });
+}
+
+/* 他基于真实天气主动说一句。一天最多两次，避免变成噪音 */
+function wxCare() {
+  if (!S.wx) return;
+  var today = S.day;
+  if (S.lastWxCare === today + ':2') return;
+  var stage = S.lastWxCare === today + ':1' ? 2 : 1;
+  if (stage === 2 && Date.now() - (S.lastWxAt || 0) < 5 * 3600e3) return;
+  var v = Dark.weather(S.wx);
+  if (!v) return;
+  S.lastWxCare = today + ':' + stage;
+  S.lastWxAt = Date.now();
+  pushHim(v);
+  save();
+  toast(v.say.split('\n')[0], '他看了天气');
+}
+
+function reverseGeo(lat, lon) {
+  var u = 'https://api.bigdatacloud.net/data/reverse-geocode-client?latitude='
+    + lat.toFixed(4) + '&longitude=' + lon.toFixed(4) + '&localityLanguage=zh';
+  return fetch(u).then(function (r) { return r.json(); }).then(function (j) {
+    var city = j.city || j.principalSubdivision || '';
+    var loc = j.locality || '';
+    if (city && loc && loc !== city) return city.replace(/市$/, '') + ' · ' + loc;
+    return city || loc || '当前位置';
+  }).catch(function () { return '当前位置'; });
+}
+
+function useGeo(explicit) {
+  if (!navigator.geolocation) {
+    toast('这台设备不支持定位');
+    loadWeather(22.543, 114.058, '深圳');
+    return;
+  }
+  $('#geoSub').textContent = '正在获取…';
+  navigator.geolocation.getCurrentPosition(function (p) {
+    var la = p.coords.latitude, lo = p.coords.longitude;
+    S.geo = { lat: la, lon: lo }; save();
+    reverseGeo(la, lo).then(function (name) {
+      S.geo.name = name; save();
+      $('#geoSub').textContent = '已获取 · ' + name;
+      loadWeather(la, lo, name);
+      if (explicit) toast('定位成功 · ' + name, '天气与提醒会用上它');
+    });
+  }, function () {
+    $('#geoSub').textContent = '被拒绝或超时 · 用默认城市';
+    loadWeather(22.543, 114.058, '深圳');
+    if (explicit) toast('没拿到定位', '已回退到深圳');
+  }, { timeout: 9000, maximumAge: 600000, enableHighAccuracy: false });
+}
+
+/* ============================================================================
+   通知 —— 关键：iOS PWA 上 new Notification() 不工作，必须走
+   ServiceWorkerRegistration.showNotification()。
+   ========================================================================== */
+var SWREG = null;
+function isStandalone() {
+  return window.navigator.standalone === true ||
+         (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+}
+function askNotif() {
+  if (!('Notification' in window)) {
+    toast('这个环境不支持通知', '需要 iOS 16.4+ 并已添加到主屏幕');
+    return;
+  }
+  if (!isStandalone() && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
+    toast('请先添加到主屏幕', 'Safari 分享 → 添加到主屏幕，再回来授权');
+    return;
+  }
+  Notification.requestPermission().then(function (p) {
+    S.notif = (p === 'granted'); save();
+    paintNotif();
+    if (S.notif) {
+      showNotif('他', '提醒开了。接下来别想糊弄我。');
+      toast('提醒已开启', '任务临期他会出现在通知栏');
+    } else {
+      toast('被拒绝了', '可以在系统设置里改回来');
+    }
+  });
+}
+function paintNotif() {
+  $('#notifSub').textContent = S.notif
+    ? '已开启 · 任务临期会推送'
+    : (isStandalone() ? '未开启 · 点右侧授权' : '未开启 · 需先添加到主屏幕');
+  $('#btn-notif').textContent = S.notif ? '已开启' : '授权';
+}
+/* 优先 SW，回退构造器（桌面浏览器可用） */
+function showNotif(title, body) {
+  if (!S.notif || !('Notification' in window) || Notification.permission !== 'granted') return false;
+  var opt = { body: body, icon: 'icons/icon-192.png', badge: 'icons/favicon-32.png',
+              tag: 'niannian', renotify: true };
+  if (SWREG && SWREG.showNotification) {
+    try { SWREG.showNotification(title, opt); return true; } catch (e) {}
+  }
+  try { new Notification(title, opt); return true; } catch (e) { return false; }
+}
+
+/* 每 30 秒检查一次临期。只在 App 前台/后台驻留时有效——Web 的硬限制 */
+function tick() {
+  renderHim();
+  var cm = nowMin(), fired = false;
+  /* 修复：读当天真实日程,不是永远空的 S.tasks */
+  dayTasks(todayStr()).forEach(function (t) {
+    var m = mins(t.time);
+    if (m === null || t.done) return;
+    var d = m - cm;
+    var k = t.id + ':' + S.day;
+    /* 临期窗口 */
+    if (d > 0 && d <= S.lead && !S.notified[k]) {
+      S.notified[k] = 1; fired = true;
+      var n = Dark.notifyText(t, d);
+      if (!showNotif(n.t, n.b)) toast(n.b, '他');
+      buzz(14);
+    }
+    /* 过点 10 分钟仍未完成 */
+    if (d <= -10 && !S.notified[k + ':over']) {
+      S.notified[k + ':over'] = 1; fired = true;
+      var n2 = Dark.notifyText(t, 0);
+      if (!showNotif(n2.t, n2.b)) toast(n2.b, 'Dark');
+    }
+  });
+  if (fired) save();
+  if (cur === 'today') { renderTasks(); renderRings(); }
+  if (cur === 'line') renderLine();
+}
+
+/* ============================================================================
+   路由
+   ========================================================================== */
+function go(name) {
+  cur = name;
+  $$('.screen').forEach(function (s) { s.classList.toggle('on', s.id === 's-' + name); });
+  /* 导航高亮：对话页归属于「他」，所以进对话时 him 格保持高亮 */
+  var navFor = (name === 'chat') ? 'him' : name;
+  $$('.tab').forEach(function (b) {
+    if (b.dataset.go === navFor) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
+  });
+  /* 对话页有自己的滚动容器，#view 让位，避免双滚动 */
+  $('#view').style.display = (name === 'chat') ? 'none' : 'block';
+  $('#fab').style.display = (name === 'today' || name === 'plan') ? 'grid' : 'none';
+  if (name === 'today') {
+    var tasks = dayTasks(S.view);
+    var existingIds = tasks.map(function (t) { return t.id; });
+    
+    var cares = [];
+    /* 智能关心引擎：查看今天时自动添加关心任务 */
+    if (S.view === todayStr()) {
+      cares = darkSmartCare();
+      cares.forEach(function (c) {
+        if (existingIds.indexOf(c.id) === -1) {
+          if (S.careIssued[S.view].length >= 3) return;
+          S.careIssued[S.view].push(c.id);
+          tasks.push(c);
+          existingIds.push(c.id);
+          if (c.happinessSay) {
+            if (!S.happinessUsed) S.happinessUsed = [];
+            if (S.happinessUsed.indexOf(c.title) === -1) S.happinessUsed.push(c.title);
+            if (S.happinessUsed.length > 60) S.happinessUsed = S.happinessUsed.slice(-40);
+          }
+        }
+      });
+    }
+    
+    /* 循环计划任务生成：自动添加当天匹配的计划任务 */
+    var planTasks = materializePlans(S.view);
+    planTasks.forEach(function (t) {
+      if (existingIds.indexOf(t.id) === -1) {
+        tasks.push(t);
+      }
+    });
+    
+    if (cares.length > 0 || planTasks.length > 0) save();
+    renderDate(); renderRings(); renderTasks();
+  }
+  if (name === 'line') renderLine();
+  if (name === 'plan') renderPlan();
+  if (name === 'him') renderHim();
+  if (name === 'me') { paintNotif(); refreshAI(); }
+  if (name === 'chat') {
+    S.unread = 0; save();
+    renderChat(); renderHim();
+  }
+  paintUnread();
+  if (name !== 'chat') $('#view').scrollTop = 0;
+}
+function renderPlan() {
+  if (curPv === 'list') renderPlanList();
+  if (curPv === 'week') renderWeek();
+  if (curPv === 'month') renderMonth();
+  if (curPv === 'year') renderYear();
+}
+
+/* ============================================================================
+   新建任务
+   ========================================================================== */
+var NEW = { ring: 1, time: '' };
+function openSheet() {
+  NEW = { ring: 1, time: '' };
+  $('#sheet').innerHTML = ''
+    + '<h3>加一件事</h3>'
+    + '<div class="fld"><label>要做什么</label>'
+    +   '<input id="f-title" placeholder="例如：写周报" maxlength="60" autocomplete="off"></div>'
+    + '<div class="fld"><label>时间（可留空）</label>'
+    +   '<input id="f-time" type="time"></div>'
+    + '<div class="fld"><label>归到哪个环</label><div class="rr" id="f-ring">'
+    +   '<button data-r="1" aria-pressed="true">正事</button>'
+    +   '<button data-r="2" aria-pressed="false">他的关心</button>'
+    +   '<button data-r="3" aria-pressed="false">身体</button></div></div>'
+    + '<div class="acts"><button class="btn g" id="f-cancel">取消</button>'
+    +   '<button class="btn" id="f-ok">加上</button></div>';
+  $('#mask').classList.add('on');
+  setTimeout(function () { $('#f-title').focus(); }, 260);
+}
+function closeSheet() { $('#mask').classList.remove('on'); }
+function addTask() {
+  var t = $('#f-title').value.trim();
+  if (!t) { toast('还没写要做什么'); return; }
+  var tm = $('#f-time').value || '';
+  var tasks = dayTasks(S.view);
+  tasks.push({
+    id: 'u' + Date.now(), time: tm, title: t, createdAt: new Date().toISOString(), ring: NEW.ring, done: false, custom: true,
+    category: classifyTask(t)
+  });
+  save(); closeSheet();
+  renderRings(); renderTasks(); renderDate();
+  toast('加上了', tm ? '他会在 ' + tm + ' 前提醒你' : '没有时间，他不会催');
+}
+
+/* 打开循环计划表单 */
+var PLAN = { ring: 1, repeat: 'week', days: [] };
+function openPlanSheet() {
+  PLAN = { ring: 1, repeat: 'week', days: [] };
+  $('#sheet').innerHTML = ''
+    + '<h3>添加循环计划</h3>'
+    + '<div class="fld"><label>要做什么</label>'
+    +   '<input id="f-plan-title" placeholder="例如：健身房锻炼" maxlength="60" autocomplete="off"></div>'
+    + '<div class="fld"><label>时间（可留空）</label>'
+    +   '<input id="f-plan-time" type="time"></div>'
+    + '<div class="fld"><label>归到哪个环</label><div class="rr" id="f-plan-ring">'
+    +   '<button data-pr="1" aria-pressed="true">正事</button>'
+    +   '<button data-pr="3" aria-pressed="false">身体</button></div></div>'
+    + '<div class="fld"><label>重复周期</label><div class="rr" id="f-plan-repeat">'
+    +   '<button data-repeat="week" aria-pressed="true">每周</button>'
+    +   '<button data-repeat="month" aria-pressed="false">每月</button></div></div>'
+    + '<div class="fld"><label id="f-plan-days-label">在哪几天</label>'
+    +   '<div id="f-plan-days-week" style="display:flex;gap:8px;flex-wrap:wrap">'
+    +     '<button data-day="1" style="padding:8px 12px;border:1px solid var(--line);border-radius:4px;background:none">周一</button>'
+    +     '<button data-day="2" style="padding:8px 12px;border:1px solid var(--line);border-radius:4px;background:none">周二</button>'
+    +     '<button data-day="3" style="padding:8px 12px;border:1px solid var(--line);border-radius:4px;background:none">周三</button>'
+    +     '<button data-day="4" style="padding:8px 12px;border:1px solid var(--line);border-radius:4px;background:none">周四</button>'
+    +     '<button data-day="5" style="padding:8px 12px;border:1px solid var(--line);border-radius:4px;background:none">周五</button>'
+    +     '<button data-day="6" style="padding:8px 12px;border:1px solid var(--line);border-radius:4px;background:none">周六</button>'
+    +     '<button data-day="0" style="padding:8px 12px;border:1px solid var(--line);border-radius:4px;background:none">周日</button>'
+    +   '</div>'
+    +   '<div id="f-plan-days-month" style="display:none;font-size:14px;color:var(--ink-3)">输入日期（逗号分隔）：<input id="f-plan-days-input" placeholder="1,15" style="margin-top:8px;width:100%"></div>'
+    + '</div>'
+    + '<div class="fld"><label>持续时间</label>'
+    +   '<input id="f-plan-start" type="date" placeholder="开始日期" style="width:48%;margin-right:4%">'
+    +   '<input id="f-plan-end" type="date" placeholder="结束日期" style="width:48%"></div>'
+    + '<div class="acts"><button id="f-cancel">取消</button><button id="f-plan-ok" class="p">确定</button></div>';
+  $('#mask').classList.add('on');
+  setTimeout(function () { $('#f-plan-title').focus(); }, 100);
+}
+
+/* 添加循环计划 */
+function addPlan() {
+  var title = $('#f-plan-title').value.trim();
+  if (!title) { toast('还没写要做什么'); return; }
+  
+  var time = $('#f-plan-time').value || '';
+  var start = $('#f-plan-start').value || todayStr();
+  var end = $('#f-plan-end').value || '';
+  
+  /* 收集选中的日期 */
+  var days = [];
+  if (PLAN.repeat === 'week') {
+    $$('[data-day]').forEach(function (btn) {
+      if (btn.getAttribute('aria-pressed') === 'true') {
+        days.push(+btn.dataset.day);
+      }
+    });
+  } else if (PLAN.repeat === 'month') {
+    var input = $('#f-plan-days-input').value.trim();
+    if (input) {
+      days = input.split(',').map(function (s) { return +s.trim(); }).filter(function (n) { return n >= 1 && n <= 31; });
+    }
+  }
+  
+  if (days.length === 0) {
+    toast('还没选择重复的日期');
+    return;
+  }
+  
+  if (!S.plans) S.plans = [];
+  S.plans.push({
+    id: 'plan' + Date.now(),
+    title: title,
+    ring: PLAN.ring,
+    repeat: PLAN.repeat,
+    days: days,
+    start: start,
+    end: end,
+    time: time
+  });
+  
+  save(); closeSheet();
+  renderPlanList();
+  toast('循环计划已添加');
+}
+
+/* ============================================================================
+   设置项
+   ========================================================================== */
+function refreshAI() {
+  /* 四种状态要分清楚，尤其「直连」——它意味着 key 在前端，
+     必须让你知道这份文件不能公开分享。 */
+  if (S.aiUrl) {
+    $('#aiSub').textContent = '已接入外部后端 · ' + S.aiUrl.slice(0, 30) + '…';
+    $('#btn-ai').textContent = '更改';
+  } else if (S.aiHere) {
+    $('#aiSub').textContent = '已接入 · 本站 /api/chat（key 在服务端）';
+    $('#btn-ai').textContent = '改用其他';
+  } else if (typeof DIRECT_KEY !== 'undefined' && DIRECT_KEY) {
+    $('#aiSub').textContent = '已接入 · 直连 DeepSeek（key 在本文件，勿分享）';
+    $('#btn-ai').textContent = '改用其他';
+  } else {
+    $('#aiSub').textContent = '未接入 · 现在用内置人格规则';
+    $('#btn-ai').textContent = '设置';
+  }
+  $('#leadSub').textContent = '任务开始前 ' + S.lead + ' 分钟';
+  $('#btn-lead').textContent = S.lead + ' 分';
+  $('#geoSub').textContent = S.geo
+    ? '已获取 · ' + (S.geo.name || (S.geo.lat.toFixed(2) + ', ' + S.geo.lon.toFixed(2)))
+    : '未获取 · 天气用默认城市';
+}
+
+/* ============================================================================
+   事件
+   ========================================================================== */
+document.addEventListener('click', function (e) {
+  var el;
+
+  /* 底部导航 */
+  if ((el = e.target.closest('.tab'))) { go(el.dataset.go); buzz(); return; }
+
+  /* 勾选 */
+  if ((el = e.target.closest('[data-tg]'))) {
+    var id = el.dataset.tg;
+    var tasks = dayTasks(S.view);
+    var t = tasks.filter(function (x) { return x.id === id; })[0];
+    if (!t) return;
+    t.done = !t.done;
+    /* 状态翻转时清掉旧话，让他重新说 */
+    delete S.said['remind:' + id];
+    delete S.said['praise:' + id];
+    save(); buzz(t.done ? 12 : 6);
+    var st = renderRings();
+    /* 三环全合：专属回应（走同一渲染通道） */
+    if (t.done && st.all) {
+      S.said['praise:' + id] = Dark.praise(t, { allDone: true, day: S.day });
+      save();
+    }
+    renderTasks(); renderDate();
+    if (S.view === todayStr() && !t.happinessSay) requestAITaskComments([t]);
+    return;
+  }
+
+  /* 删除自建任务 */
+  if ((el = e.target.closest('[data-del]'))) {
+    var did = el.dataset.del;
+    var tasks = dayTasks(S.view);
+    S.days[S.view] = tasks.filter(function (x) { return x.id !== did; });
+    delete S.said['remind:' + did]; delete S.said['praise:' + did];
+    save(); renderRings(); renderTasks(); renderDate();
+    toast('删掉了');
+    return;
+  }
+
+  /* 日期选择 */
+  if (e.target.id === 'dateBtn' || e.target.closest('#dateBtn')) {
+    var input = document.createElement('input');
+    input.type = 'date';
+    input.value = S.view;
+    input.style.position = 'fixed';
+    input.style.opacity = '0';
+    input.style.pointerEvents = 'none';
+    document.body.appendChild(input);
+    input.addEventListener('change', function() {
+      if (input.value) {
+        S.view = input.value;
+        save();
+        renderDate(); renderRings(); renderTasks();
+      }
+      document.body.removeChild(input);
+    });
+    input.showPicker();
+    return;
+  }
+
+  /* thought process 展开 */
+  if ((el = e.target.closest('[data-tp]'))) {
+    var p = document.getElementById(el.dataset.tp);
+    var open = p.dataset.open === 'true';
+    p.dataset.open = open ? 'false' : 'true';
+    el.setAttribute('aria-expanded', open ? 'false' : 'true');
+    buzz(5);
+    return;
+  }
+
+  /* 天气胶囊 → 重新定位 */
+  if (e.target.closest('#wx')) { useGeo(true); return; }
+
+  /* 计划页维度 */
+  if ((el = e.target.closest('[data-pv]'))) {
+    curPv = el.dataset.pv;
+    $$('[data-pv]').forEach(function (b) {
+      b.setAttribute('aria-selected', b.dataset.pv === curPv ? 'true' : 'false');
+    });
+    $$('.pv').forEach(function (v) { v.classList.toggle('on', v.id === 'pv-' + curPv); });
+    renderPlan();
+    return;
+  }
+
+  /* 删除循环计划 */
+  if ((el = e.target.closest('[data-plan-del]'))) {
+    var pid = el.dataset.planDel;
+    if (confirm('确定删除这个循环计划吗？')) {
+      S.plans = S.plans.filter(function (p) { return p.id !== pid; });
+      save();
+      renderPlanList();
+      toast('已删除');
+    }
+    return;
+  }
+
+  /* 快捷短语 */
+  if ((el = e.target.closest('[data-chip]'))) {
+    $('#msg').value = el.dataset.chip;
+    $('#btn-send').disabled = false;
+    send();
+    return;
+  }
+  if (e.target.closest('#btn-talk')) { go('chat'); buzz(); return; }
+  if (e.target.closest('#btn-back')) { go('him'); buzz(); return; }
+  if (e.target.closest('#btn-send')) { send(); return; }
+  if (e.target.closest('#btn-clear')) {
+    S.chat = []; S.said = {}; S.unread = 0; save(); renderChat();
+    toast('清空了', '他不会真的忘记');
+    return;
+  }
+
+  /* FAB / 弹层 */
+  if (e.target.closest('#fab')) {
+    if (cur === 'plan') openPlanSheet();
+    else openSheet();
+    return;
+  }
+  if (e.target.closest('#f-cancel')) { closeSheet(); return; }
+  if (e.target.closest('#f-ok')) { addTask(); return; }
+  if (e.target.closest('#f-plan-ok')) { addPlan(); return; }
+  if ((el = e.target.closest('[data-r]'))) {
+    NEW.ring = +el.dataset.r;
+    $$('[data-r]').forEach(function (b) {
+      b.setAttribute('aria-pressed', b.dataset.r === el.dataset.r ? 'true' : 'false');
+    });
+    return;
+  }
+  
+  /* 循环计划表单：环选择 */
+  if ((el = e.target.closest('[data-pr]'))) {
+    PLAN.ring = +el.dataset.pr;
+    $$('[data-pr]').forEach(function (b) {
+      b.setAttribute('aria-pressed', b.dataset.pr === el.dataset.pr ? 'true' : 'false');
+    });
+    buzz(4); return;
+  }
+  
+  /* 循环计划表单：周期选择 */
+  if ((el = e.target.closest('[data-repeat]'))) {
+    PLAN.repeat = el.dataset.repeat;
+    $$('[data-repeat]').forEach(function (b) {
+      b.setAttribute('aria-pressed', b.dataset.repeat === el.dataset.repeat ? 'true' : 'false');
+    });
+    /* 切换日期选择界面 */
+    $('#f-plan-days-week').style.display = PLAN.repeat === 'week' ? 'flex' : 'none';
+    $('#f-plan-days-month').style.display = PLAN.repeat === 'month' ? 'block' : 'none';
+    $('#f-plan-days-label').textContent = PLAN.repeat === 'week' ? '在哪几天' : '在每月几号';
+    buzz(4); return;
+  }
+  
+  /* 循环计划表单：日期多选（周） */
+  if ((el = e.target.closest('[data-day]'))) {
+    var pressed = el.getAttribute('aria-pressed') === 'true';
+    el.setAttribute('aria-pressed', pressed ? 'false' : 'true');
+    el.style.background = pressed ? 'none' : 'var(--her-100)';
+    el.style.borderColor = pressed ? 'var(--line)' : 'var(--her-300)';
+    buzz(4); return;
+  }
+  
+  if (e.target === $('#mask')) { closeSheet(); return; }
+
+  /* 我的页 */
+  if (e.target.closest('#btn-geo')) { useGeo(true); return; }
+  if (e.target.closest('#btn-notif')) { askNotif(); return; }
+  if (e.target.closest('#btn-lead')) {
+    var opts = [5, 10, 15, 30, 60];
+    S.lead = opts[(opts.indexOf(S.lead) + 1) % opts.length];
+    S.notified = {}; save(); refreshAI();
+    toast('改成提前 ' + S.lead + ' 分钟');
+    return;
+  }
+  if (e.target.closest('#btn-ai')) {
+    var tip = S.aiHere
+      ? '本站已自带后端（/api/chat），通常不需要填。\n\n'
+        + '要改用其他地址就填进去；留空则用本站的。'
+      : '后端代理地址（https://…）\n\nkey 必须放在服务端，不要填在这里。';
+    var v = prompt(tip, S.aiUrl || '');
+    if (v === null) return;
+    v = v.trim();
+    /* 先查 key —— 顺序反了会报「必须 https 开头」，掩盖真正的问题 */
+    if (/sk-|api[_-]?key/i.test(v)) { toast('这里填地址，不是 key', 'key 应放在后端环境变量'); return; }
+    if (v && !/^https:\/\//.test(v)) { toast('必须是 https:// 开头'); return; }
+    S.aiUrl = v; save();
+    if (!v) probeAI();          // 清空后重新探测同站后端
+    refreshAI();
+    toast(v ? '已接入外部后端' : (S.aiHere ? '已改回本站后端' : '已切回内置人格'));
+    return;
+  }
+  if (e.target.closest('#btn-exp')) {
+    var blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'niannian-' + S.day + '.json';
+    a.click();
+    toast('已导出');
+    return;
+  }
+  if (e.target.closest('#btn-reset')) {
+    if (!confirm('清空全部数据？这个动作不可撤销。')) return;
+    localStorage.removeItem(KEY);
+    location.reload();
+    return;
+  }
+});
+
+var ta = $('#msg');
+ta.addEventListener('input', function () {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 96) + 'px';
+  $('#btn-send').disabled = !this.value.trim();
+});
+ta.addEventListener('keydown', function (e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+});
+
+/* 回到前台：刷新时间相关的一切 */
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState !== 'visible') return;
+  var t = todayStr();
+  if (t !== S.day) { load(); }
+  renderDate();
+  if (cur === 'today') { renderRings(); renderTasks(); }
+  if (cur === 'line') renderLine();
+  renderHim();
+  /* 天气超过 30 分钟就刷新 */
+  if (S.geo && (!S.wx || Date.now() - S.wx.at > 1800e3)) {
+    loadWeather(S.geo.lat, S.geo.lon, S.geo.name);
+  }
+});
+
+/* ============================================================================
+   启动
+   ========================================================================== */
+function boot() {
+  load();
+  renderDate(); renderRings(); renderTasks(); renderChips(); renderHim();
+  refreshAI(); paintNotif(); paintUnread();
+
+  if (S.wx) paintWx(wmoKind(S.wx.code), Math.round(S.wx.temp), S.wx.label);
+  if (S.geo) loadWeather(S.geo.lat, S.geo.lon, S.geo.name);
+  else loadWeather(22.543, 114.058, '深圳');   /* 首次进入先给个可看的值，不阻塞 */
+
+  probeAI();          // 探测同站 /api/chat（Pages Functions）
+  tick();
+  setInterval(tick, 30000);
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').then(function (r) {
+      SWREG = r;
+      return navigator.serviceWorker.ready;
+    }).then(function (r) { SWREG = r; }).catch(function () {});
+  }
+}
+boot();
+</script>
+</body>
+</html>
